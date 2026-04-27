@@ -24,7 +24,7 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-module ternip_s_axi_rst #(
+module s_axi_ternip_rst #(
     parameter DATA_WIDTH = 32,
     parameter ADDR_WIDTH = 32,
     parameter ID_WIDTH   = 8,
