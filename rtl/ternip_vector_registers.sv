@@ -63,7 +63,7 @@ ternip_pipelined_mem #(
     .DATA_WIDTH(FixedPointPrecision * VectorParallelism),
     .NUM_ENTRIES(NumVectorRegisters * D_rounded_up / VectorParallelism),
     .UNCOUPLED_READY(1)
-) ternip_pipelined_mem (
+) pipelined_mem (
     .clk_i,
     .rst_ni,
 

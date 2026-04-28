@@ -35,7 +35,7 @@ module ternip_rowwise_operation #(
     parameter bit UseHardSigmoid      = ternip_pkg::UseHardSigmoid,
 
     parameter ternip_pkg::mul_impl_e MultiplicationImplementation = ternip_pkg::MultiplicationImplementation,
-    parameter ternip_pkg::div_impl_e DivisionImplementation       = ternip_pkg::DivisionImplementation,
+    // parameter ternip_pkg::div_impl_e DivisionImplementation       = ternip_pkg::DivisionImplementation,
 
     localparam type fixed_point_t   = logic signed [ternip_pkg::FixedPointPrecision-1:0],
     localparam type vector_chunk_t  = fixed_point_t [VectorParallelism-1:0],
@@ -398,7 +398,7 @@ for (genvar i_GEN = 0; i_GEN < VectorParallelism; i_GEN++) begin
 
     ternip_add #(
         .FixedPointPrecision(FixedPointPrecision)
-    ) ternip_add (
+    ) add (
         .a_i(vector1_r_data_q[i_GEN]),
         .b_i(vector_read_data_i[i_GEN]),
         .y_o(rowwise_add_result[i_GEN])
@@ -406,7 +406,7 @@ for (genvar i_GEN = 0; i_GEN < VectorParallelism; i_GEN++) begin
 
     ternip_sub #(
         .FixedPointPrecision(FixedPointPrecision)
-    ) ternip_sub (
+    ) sub (
         .a_i(vector1_r_data_q[i_GEN]),
         .b_i(vector_read_data_i[i_GEN]),
         .y_o(rowwise_sub_result[i_GEN])
@@ -420,7 +420,7 @@ for (genvar i_GEN = 0; i_GEN < VectorParallelism; i_GEN++) begin
         .OutPrecision(FixedPointPrecision),
         .OutExponent(FixedPointExponent),
         .Implementation(MultiplicationImplementation)
-    ) ternip_mul (
+    ) mul (
         .clk_i,
         .rst_ni,
         .in_ready_o(rowwise_mul_in_ready[i_GEN]),
@@ -441,7 +441,7 @@ for (genvar i_GEN = 0; i_GEN < VectorParallelism; i_GEN++) begin
         .OutPrecision(FixedPointPrecision),
         .OutExponent(FixedPointExponent),
         .Implementation(ternip_pkg::DIV_NONE) // Disable division unit
-    ) ternip_div (
+    ) div (
         .clk_i,
         .rst_ni,
         .in_ready_o(rowwise_div_in_ready[i_GEN]),
@@ -462,7 +462,7 @@ ternip_sig_parallelized #(
     .VectorParallelism(VectorParallelism),
     .LutParallelism(LutParallelism),
     .UseHardSigmoid(UseHardSigmoid)
-) ternip_sig_parallelized (
+) sig_parallelized (
     .clk_i,
     .rst_ni,
 
@@ -481,7 +481,7 @@ ternip_csig_parallelized #(
     .VectorParallelism(VectorParallelism),
     .LutParallelism(LutParallelism),
     .UseHardSigmoid(UseHardSigmoid)
-) ternip_csig_parallelized (
+) csig_parallelized (
     .clk_i,
     .rst_ni,
 
@@ -500,7 +500,7 @@ ternip_silu_parallelized #(
     .VectorParallelism(VectorParallelism),
     .LutParallelism(LutParallelism),
     .UseHardSigmoid(UseHardSigmoid)
-) ternip_silu_parallelized (
+) silu_parallelized (
     .clk_i,
     .rst_ni,
 

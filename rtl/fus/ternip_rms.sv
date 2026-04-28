@@ -39,6 +39,8 @@ module ternip_rms #(
     parameter int RmsSqrtInputExponent        = ternip_pkg::RmsSqrtInputExponent,
     parameter int RmsAccumulatorWidth         = ternip_pkg::RmsAccumulatorWidth,
 
+    parameter ternip_pkg::div_impl_e DivisionImplementation = ternip_pkg::DivisionImplementation,
+
     localparam type fixed_point_t          = logic signed [ternip_pkg::FixedPointPrecision-1:0],
     localparam type vector_chunk_t         = fixed_point_t [VectorParallelism-1:0],
     localparam type vector_offset_t        = logic [$clog2(NumChunksPerVector)-1:0],
@@ -174,7 +176,7 @@ ternip_multioperand_accumulator #(
     .result_t(rms_accumulator_t),
     .NUM_OPERANDS(VectorParallelism),
     .NEXT_STAGE_FANIN(2)
-) ternip_multioperand_accumulator (
+) multioperand_accumulator (
     .clk_i,
     .rst_ni,
 
@@ -216,7 +218,7 @@ ternip_div #(
     .InBExponent(RmsSqaSumExponent),
     .OutPrecision(RmsSqrtInputPrecision),
     .OutExponent(RmsSqrtInputExponent),
-    .Implementation(ternip_pkg::DIV_BSG)
+    .Implementation(DivisionImplementation)
 ) rms_value_reciprocal_divider (
     .clk_i,
     .rst_ni,
@@ -246,7 +248,7 @@ ternip_sqrt #(
     .InExponent(RmsSqrtInputExponent),
     .OutPrecision(RmsValueReciprocalPrecision),
     .OutExponent(RmsValueReciprocalExponent)
-) ternip_sqrt (
+) sqrt (
     .clk_i,
     .rst_ni,
     .in_ready_o(rms_sqrt_in_ready),

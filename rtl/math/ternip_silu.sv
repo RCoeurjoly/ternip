@@ -111,7 +111,7 @@ if (UseHardSigmoid) begin : gen_hard_silu
         .OutPrecision(FixedPointPrecision),
         .OutExponent(FixedPointExponent),
         .Implementation(MultiplicationImplementation)
-    ) ternip_mul (
+    ) mul (
         .clk_i,
         .rst_ni,
 

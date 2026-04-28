@@ -89,7 +89,7 @@ for (genvar i_GEN = 0; i_GEN < Parallelism; i_GEN++) begin
         .FixedPointPrecision(FixedPointPrecision),
         .FixedPointExponent(FixedPointExponent),
         .UseHardSigmoid(UseHardSigmoid)
-    ) ternip_csig (
+    ) csig (
         .a_i(r_out_data[i_GEN]),
         .y_o(w_in_data[i_GEN])
     );

@@ -82,7 +82,7 @@ ternip_fixed_point_convert #(
 
 ternip_sqrt_int #(
     .Width(SqrtInternalPrecision)
-) ternip_sqrt_int (
+) sqrt_int (
     .clk_i,
     .rst_ni,
 

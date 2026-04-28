@@ -161,6 +161,9 @@ localparam int RmsSqrtInputUnaryOperationLutSize = (2 ** RmsSqrtInputPrecision);
 typedef fixed_point_t [VectorParallelism-1:0] vector_chunk_t;
 localparam int NumChunksPerVector = D / VectorParallelism;
 
+typedef logic [$clog2(NumChunksPerVector)-1:0] vector_offset_t;
+typedef logic [$clog2(NumVectorRegisters)-1:0] vector_select_t;
+
 typedef logic [DdrAddressWidth-1:0] ddr_address_t;
 typedef logic [ImmediateWidth-1:0] immediate_t;
 

@@ -114,7 +114,7 @@ ternip_vector_registers #(
     .VectorParallelism(VectorParallelism),
     .NumVectorRegisters(NumVectorRegisters),
     .NumChunksPerVector(NumChunksPerVector)
-) ternip_vector_registers (
+) vector_registers (
     .clk_i,
     .rst_ni,
 
@@ -154,7 +154,7 @@ ternip_loadstore #(
     .NumChunksPerVector(NumChunksPerVector),
     .DdrAddressWidth(DdrAddressWidth),
     .BatchSize(BatchSize)
-) ternip_loadstore (
+) loadstore (
     .clk_i,
     .rst_ni,
 
@@ -218,9 +218,8 @@ ternip_rowwise_operation #(
     .NumVectorRegisters(NumVectorRegisters),
     .NumChunksPerVector(NumChunksPerVector),
     .UseHardSigmoid(UseHardSigmoid),
-    .MultiplicationImplementation(MultiplicationImplementation),
-    .DivisionImplementation(DivisionImplementation)
-) ternip_rowwise_operation (
+    .MultiplicationImplementation(MultiplicationImplementation)
+) rowwise_operation (
     .clk_i,
     .rst_ni,
 
@@ -272,8 +271,9 @@ ternip_rms #(
     .RmsValueReciprocalExponent(RmsValueReciprocalExponent),
     .RmsSqrtInputPrecision(RmsSqrtInputPrecision),
     .RmsSqrtInputExponent(RmsSqrtInputExponent),
-    .RmsAccumulatorWidth(RmsAccumulatorWidth)
-) ternip_rms (
+    .RmsAccumulatorWidth(RmsAccumulatorWidth),
+    .DivisionImplementation(DivisionImplementation)
+) rms (
     .clk_i,
     .rst_ni,
 
@@ -326,7 +326,7 @@ ternip_tmatmul #(
     .NumChunksPerVector(NumChunksPerVector),
     .DdrAddressWidth(DdrAddressWidth),
     .MatrixSizeInBytes(MatrixSizeInBytes)
-) ternip_tmatmul (
+) tmatmul (
     .clk_i,
     .rst_ni,
 

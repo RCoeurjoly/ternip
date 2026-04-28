@@ -100,7 +100,7 @@ if (UseHardSigmoid) begin : gen_hard_silu
             .FixedPointExponent(FixedPointExponent),
             .UseHardSigmoid(UseHardSigmoid),
             .MultiplicationImplementation(MultiplicationImplementation)
-        ) ternip_silu (
+        ) silu (
             .clk_i,
             .rst_ni,
 
@@ -126,7 +126,7 @@ end else begin : gen_lut_silu
             .FixedPointExponent(FixedPointExponent),
             .UseHardSigmoid(UseHardSigmoid),
             .MultiplicationImplementation(MultiplicationImplementation)
-        ) ternip_silu (
+        ) silu (
             .clk_i,
             .rst_ni,
 

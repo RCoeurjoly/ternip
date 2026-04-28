@@ -136,7 +136,7 @@ end else if (Implementation == ternip_pkg::MUL_STAR) begin : mul_star
 
     ternip_starmul #(
         .DataWidth(MulInternalPrecision)
-    ) ternip_starmul (
+    ) starmul (
         .clk_i,
         .rst_ni,
 

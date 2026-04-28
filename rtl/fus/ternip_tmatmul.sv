@@ -164,7 +164,7 @@ for (genvar i_GEN = 0; i_GEN < RowParallelism; i_GEN++) begin : row
         .result_t(fixed_point_t),
         .NUM_OPERANDS(ImportVectorRowWidth),
         .NEXT_STAGE_FANIN(2)
-    ) ternip_multioperand_accumulator (
+    ) multioperand_accumulator (
         .clk_i,
         .rst_ni,
         .in_ready_o(accumulator_in_ready[i_GEN]),
