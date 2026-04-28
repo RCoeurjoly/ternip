@@ -24,6 +24,13 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+// ternip_add
+//
+// Saturating fixed-point add.
+//
+// Computes y_o = a_i + b_i and clamps to FixedPointPrecision.
+// This is combinational: drive a_i and b_i, then use y_o in the same cycle.
+
 module ternip_add #(
     parameter int FixedPointPrecision = ternip_pkg::FixedPointPrecision,
     localparam type fixed_point_t = logic signed [ternip_pkg::FixedPointPrecision-1:0]

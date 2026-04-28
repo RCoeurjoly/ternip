@@ -24,6 +24,17 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+// s_axi_ternip_const_rd
+//
+// Minimal AXI4 read subordinate (slave) that returns a constant value.
+//
+// The module accepts one read burst at a time and responds with CONST_DATA for
+// every beat, preserving the incoming ARID and asserting RLAST on the final beat.
+// Address fields are ignored. Responses use OKAY.
+//
+// Use this for simple memory-mapped status locations or placeholder read ports
+// where software expects a legal AXI read transaction but the data is constant.
+
 module s_axi_ternip_const_rd #(
     parameter DATA_WIDTH  = 32,
     parameter ADDR_WIDTH  = 32,

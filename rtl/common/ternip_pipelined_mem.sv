@@ -24,12 +24,26 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+// ternip_pipelined_mem
+//
+// Pipelined single-port memory with one request channel and one read-response
+// channel.
+//
+// request_valid_i carries either a write or a read. Writes update MEM after the
+// first pipeline stage; reads return read_valid_o/read_data_o after the memory
+// pipeline. read_addr_o reports the address associated with each read response.
+//
+// Use request_ready_o/request_valid_i for all memory commands and use the
+// read_ready_i/read_valid_o channel only for read results. With DECOUPLED_READY
+// set, a one-stage interconnect buffers read responses so request to break up a
+// long combinational ready path.
+
 `define SAFE_CLOG2(x) ( (((x)==1) || ((x)==0)) ? 1 : $clog2(x) )
 
 module ternip_pipelined_mem #(
     parameter int DATA_WIDTH      = 8,
     parameter int NUM_ENTRIES     = 256,
-    parameter bit UNCOUPLED_READY = 0
+    parameter bit DECOUPLED_READY = 0
 ) (
     input  logic                                clk_i,
     input  logic                                rst_ni,
@@ -76,7 +90,7 @@ assign write_valid_d = (request_valid_i && request_write_not_read_i);
 
 logic stall1, stall2, stall3;
 
-if (UNCOUPLED_READY) begin
+if (DECOUPLED_READY) begin
     assign stall2 = !buffer_in_ready && read_valid_q2;
 end else begin
     assign stall3 = !read_ready_i && read_valid_o;
@@ -138,7 +152,7 @@ always_ff @(posedge clk_i) begin
     end
 end
 
-if (UNCOUPLED_READY) begin : uncoupled_ready
+if (DECOUPLED_READY) begin : decoupled_ready
     assign buffer_in_valid = read_valid_q2;
     assign buffer_in_data = {request_addr_q2, read_data_q2};
 

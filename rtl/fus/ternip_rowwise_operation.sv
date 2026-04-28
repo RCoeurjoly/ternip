@@ -24,6 +24,21 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+// ternip_rowwise_operation
+//
+// Functional unit for elementwise vector operations.
+//
+// This unit reads one or more vector registers, applies the selected rowwise_op_e
+// to each lane, and writes the result vector. ADD/SUB are combinational per
+// chunk. MUL, DIV, SIG, CSIG, and SILU route chunks through the corresponding
+// ready/valid math blocks and buffer multicycle results before writing them
+// back.
+//
+// Use in_vector1_r_select_i as the first source, in_vector2_r_select_i as the
+// second source for binary operations, and in_vector3_r_select_i as the
+// destination register. The vector register request/read channels must be
+// connected to ternip_vector_registers.
+
 module ternip_rowwise_operation #(
     parameter int D                   = ternip_pkg::D,
     parameter int FixedPointPrecision = ternip_pkg::FixedPointPrecision,

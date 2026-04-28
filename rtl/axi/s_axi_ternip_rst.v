@@ -24,6 +24,18 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+// s_axi_ternip_rst
+//
+// Minimal AXI4 write subordinate (slave) that generates an active-low reset pulse.
+//
+// Any accepted write transaction clears the internal reset shift register and
+// produces rst_no low for RST_LENGTH cycles before it shifts back high. The
+// module accepts address and data beats independently, then returns a single
+// write response using the captured AWID.
+//
+// Use this as a software-visible reset register for Ternip logic. The written
+// data and address are ignored; the write itself is the reset trigger.
+
 module s_axi_ternip_rst #(
     parameter DATA_WIDTH = 32,
     parameter ADDR_WIDTH = 32,

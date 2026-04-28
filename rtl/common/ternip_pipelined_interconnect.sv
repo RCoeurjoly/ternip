@@ -24,6 +24,18 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+// ternip_pipelined_interconnect
+//
+// Ready/valid interconnect that registers both forward data/valid and reverse
+// ready paths.
+//
+// NumStages controls how many cycles of pipeline delay are inserted between the
+// source and sink. A small FIFO absorbs the skew between the delayed valid/data
+// path and the delayed ready path, and a final output register breaks the FIFO
+// read-to-output path.
+//
+// Use this when timing requires cutting a long ready/valid connection.
+
 module ternip_pipelined_interconnect #(
     parameter int DataWidth = 8,
     parameter int NumStages = 8

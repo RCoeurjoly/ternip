@@ -24,6 +24,20 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+// ternip_pkg
+//
+// Shared Ternip types, configuration-derived constants, and helper functions.
+//
+// This package defines instruction enums, fixed-point and vector data types,
+// DDR address types, RMS internal formats, and the packed instruction_t layout.
+// It includes the build-selected `CONFIG_FILENAME, so parameters such as D,
+// FixedPointPrecision, VectorParallelism, and implementation choices come from
+// the active configuration file.
+//
+// Import this package anywhere Ternip modules need common enums, widths, or
+// fixed-point helpers. The ternip_assertions module at the bottom provides
+// elaboration-time checks for supported configuration combinations.
+
 package ternip_pkg;
 
 typedef enum logic [3:0] {

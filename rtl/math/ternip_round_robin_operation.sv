@@ -24,6 +24,14 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+// ternip_round_robin_operation
+//
+// Round-robin bank of multicycle arithmetic units.
+//
+// Sends each accepted input to one of workers and merges the
+// results back into one output stream.
+// Set Operation to "MUL" or "DIV".
+
 module ternip_round_robin_operation #(
     parameter int DataWidth = 16,
     parameter int NumRobins = 2*DataWidth,

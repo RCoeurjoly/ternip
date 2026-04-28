@@ -24,6 +24,20 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+// ternip_multioperand_accumulator
+//
+// Pipelined reducer plus running accumulator for many signed operands.
+//
+// Each accepted input beat reduces NUM_OPERANDS values through a tree with
+// NEXT_STAGE_FANIN operands per node, then adds the reduced value into an
+// accumulator. Assert in_final_i on the last beat of an accumulation group; the
+// clipped result is pushed to the output FIFO after the pipeline drains.
+//
+// Use this for dot-product or sum-of-products style reductions where many
+// partial values arrive per cycle. NEXT_STAGE_FANIN must be a power of two.
+// Backpressure is applied at in_ready_o when the output register/FIFO cannot
+// accept another completed accumulation.
+
 `define SIGN_EXTEND(X, FROM, TO) (TO'({ {$bits(TO){X[$bits(FROM)-1]}}, X }))
 
 module ternip_multioperand_accumulator #(

@@ -24,6 +24,15 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+// ternip_fixed_point_convert
+//
+// Convert between signed fixed-point formats.
+//
+// Interprets in as InPrecision bits scaled by 2**InExponent. Produces out as
+// OutPrecision bits scaled by 2**OutExponent, with roundToIntegralTiesToAway rounding.
+// The conversion is combinational. clk_i/rst_ni are only used by simulation
+// assertions.
+
 module ternip_fixed_point_convert #(
     parameter int InPrecision  = 16,
     parameter int InExponent   = 0,

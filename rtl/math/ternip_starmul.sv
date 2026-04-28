@@ -24,6 +24,14 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+// ternip_starmul
+//
+// Two-stage signed '*' multiplier.
+//
+// Registers a_i and b_i, computes their product with the SystemVerilog '*'
+// operator, and registers y_o. The product is truncated to DataWidth bits.
+// File intended for DSP inference.
+
 module ternip_starmul #(
     parameter int DataWidth = 32
 ) (

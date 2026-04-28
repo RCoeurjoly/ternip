@@ -24,6 +24,18 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+// s_axi_ternip_wait_for_interrupt
+//
+// AXI4 read slave that holds read data until an interrupt is asserted.
+//
+// The module accepts one read burst at a time. After the request is accepted it
+// presents CONST_DATA responses only while interrupt_i is high, allowing a host
+// read to block at the AXI level until the core signals completion or attention.
+// Address fields are ignored and responses use OKAY.
+//
+// Use this for simple polling/wait-for-interrupt software flows where a blocking
+// read is more convenient than repeatedly reading a status register.
+
 module s_axi_ternip_wait_for_interrupt #(
     parameter DATA_WIDTH  = 32,
     parameter ADDR_WIDTH  = 32,

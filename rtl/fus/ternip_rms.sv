@@ -24,6 +24,20 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+// ternip_rms
+//
+// Functional unit for RMS normalization over vector registers.
+//
+// CLEAR resets the internal accumulated square-sum register.
+// ACCUMULATE adds the squared elements of one vector into that register.
+// FINISH_ACCUMULATE computes the reciprocal RMS scale factor.
+// NORM multiplies a vector by that scale and writes the normalized result.
+//
+// Use CLEAR before a new RMS group. Then issue one or more ACCUMULATE commands,
+// one FINISH_ACCUMULATE command, and one or more NORM commands. The unit accepts
+// one command on in_* and sequences the vector-register and math handshakes
+// until that command finishes.
+
 module ternip_rms #(
     parameter int FixedPointPrecision         = ternip_pkg::FixedPointPrecision,
     parameter int FixedPointExponent          = ternip_pkg::FixedPointExponent,

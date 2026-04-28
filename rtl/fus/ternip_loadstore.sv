@@ -24,6 +24,21 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+// ternip_loadstore
+//
+// Functional unit for loading and storing vector registers through a DDR stream
+// interface.
+//
+// LDV starts a DDR read stream and writes each incoming vector chunk into the
+// selected vector register. SV reads chunks from the selected vector register
+// and streams them to DDR. The instruction-side in_* handshake accepts one
+// load/store command; the unit then sequences vector-memory and DDR handshakes
+// until the whole vector transfer completes.
+//
+// Use in_vector_memory_address_i as the stream base address and
+// in_vector_select_i as the target/source vector register. The emitted stream
+// length is BatchSize * VectorSizeInBytes.
+
 module ternip_loadstore #(
     parameter int D                   = ternip_pkg::D,
     parameter int FixedPointPrecision = ternip_pkg::FixedPointPrecision,

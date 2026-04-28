@@ -24,6 +24,14 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+// ternip_silu_parallelized
+//
+// Vector fixed-point SiLU.
+//
+// Applies ternip_silu (x * sigmoid) to every lane of one vector_chunk_t.
+// Hard-sigmoid mode processes VectorParallelism lanes at a time.
+// LUT mode processes LutParallelism lanes at a time.
+
 module ternip_silu_parallelized #(
     parameter int  FixedPointPrecision          = ternip_pkg::FixedPointPrecision,
     parameter int  FixedPointExponent           = ternip_pkg::FixedPointExponent,

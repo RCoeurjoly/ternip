@@ -24,6 +24,18 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+// ternip_vector_registers
+//
+// Stores Ternip vector registers.
+//
+// Each vector is stored as NumChunksPerVector chunks. A request chooses one
+// vector register and one chunk address, then either writes that chunk or starts
+// a read for that chunk.
+//
+// Use request_ready_o/request_valid_i for both reads and writes. Reads return
+// later on read_valid_o/read_data_o, along with the vector and chunk address
+// that were read.
+
 module ternip_vector_registers #(
     parameter int D                   = ternip_pkg::D,
     parameter int FixedPointPrecision = ternip_pkg::FixedPointPrecision,
@@ -62,7 +74,7 @@ localparam int D_rounded_up = 2**$clog2(D);
 ternip_pipelined_mem #(
     .DATA_WIDTH(FixedPointPrecision * VectorParallelism),
     .NUM_ENTRIES(NumVectorRegisters * D_rounded_up / VectorParallelism),
-    .UNCOUPLED_READY(1)
+    .DECOUPLED_READY(1)
 ) pipelined_mem (
     .clk_i,
     .rst_ni,

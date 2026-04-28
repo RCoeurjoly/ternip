@@ -24,6 +24,14 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+// ternip_mul
+//
+// Signed fixed-point multiply.
+//
+// Multiplies a_i and b_i in a wider internal fixed-point format, then converts
+// and saturates the product to OutPrecision/OutExponent. Implementation selects
+// BSG, round-robin, starmul, or placeholder behavior.
+
 module ternip_mul #(
     parameter int InAPrecision = ternip_pkg::FixedPointPrecision,
     parameter int InAExponent  = ternip_pkg::FixedPointExponent,

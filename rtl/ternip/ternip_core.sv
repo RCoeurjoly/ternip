@@ -24,6 +24,21 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+// ternip_core
+//
+// Top-level Ternip compute core.
+//
+// The core accepts decoded instructions on instruction_ready_o/instruction_valid_i
+// and dispatches each instruction to one functional unit: load/store, rowwise
+// operation, ternary matmul, RMS, or stall. A shared vector-register file is
+// arbitrated among the FUs, while load/store and tmatmul expose separate DDR
+// stream/read/write interfaces.
+//
+// Use this module as the main RTL integration point. Drive one instruction when
+// instruction_ready_o is high, connect the DDR stream ports to the memory system,
+// and use stall_active_o/stall_clear_i to implement host-visible stalls or
+// interrupts.
+
 module ternip_core #(
     parameter int D                           = ternip_pkg::D,
     parameter int TmatmulParallelism          = ternip_pkg::TmatmulParallelism,

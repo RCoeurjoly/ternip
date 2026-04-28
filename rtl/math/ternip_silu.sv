@@ -26,6 +26,13 @@
 
 `include "ternip_readmem_path.svh"
 
+// ternip_silu
+//
+// Scalar fixed-point SiLU.
+//
+// Computes y_o = a_i * sigmoid(a_i). With UseHardSigmoid set, this uses a
+// first-order approximation. Otherwise it reads a precomputed LUT.
+
 module ternip_silu #(
     parameter int FixedPointPrecision = ternip_pkg::FixedPointPrecision,
     parameter int FixedPointExponent  = ternip_pkg::FixedPointExponent,

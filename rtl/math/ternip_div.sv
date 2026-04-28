@@ -24,6 +24,14 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+// ternip_div
+//
+// Signed fixed-point divide.
+//
+// Computes a_i / b_i by widening the operands, shifting the dividend to keep
+// fractional bits, and converting the quotient to OutPrecision/OutExponent with
+// saturation. Implementation selects BSG, round-robin, or placeholder behavior.
+
 module ternip_div #(
     parameter int InAPrecision = ternip_pkg::FixedPointPrecision,
     parameter int InAExponent  = ternip_pkg::FixedPointExponent,

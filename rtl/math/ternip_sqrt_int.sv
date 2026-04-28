@@ -24,6 +24,13 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+// ternip_sqrt_int
+//
+// Iterative unsigned integer square root.
+//
+// Accepts one Width-bit unsigned value and returns floor(sqrt(a_i)). The result
+// width is ceil(Width/2). Latency scales with the result width.
+
 module ternip_sqrt_int #(
     parameter int Width = 8
 ) (

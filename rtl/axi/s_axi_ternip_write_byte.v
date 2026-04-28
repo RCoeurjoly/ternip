@@ -24,6 +24,18 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+// s_axi_ternip_write_byte
+//
+// Minimal AXI4 write slave that forwards the first written byte to AXI-Stream.
+//
+// The module accepts one AXI write burst, sends s_axi_wdata[7:0] from the first
+// data beat on m_axis_tdata, drains the remaining write beats, then returns one
+// write response with the captured AWID. Address fields and upper data bits are
+// ignored.
+//
+// Use this as a tiny software command mailbox when only an 8-bit command value
+// is needed but the host speaks AXI4 writes.
+
 module s_axi_ternip_write_byte #(
     parameter DATA_WIDTH = 32,
     parameter ADDR_WIDTH = 32,

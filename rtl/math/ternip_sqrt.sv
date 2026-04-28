@@ -24,6 +24,14 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+// ternip_sqrt
+//
+// Fixed-point square root.
+//
+// Converts a_i to an unsigned internal format, computes floor(sqrt(a_i)) with
+// ternip_sqrt_int, and converts the result to OutPrecision/OutExponent. Inputs
+// should be non-negative.
+
 module ternip_sqrt #(
     parameter int InPrecision = 8,
     parameter int InExponent = -3,

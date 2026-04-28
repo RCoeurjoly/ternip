@@ -24,6 +24,19 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+// ternip_gearbox_fifo
+//
+// Ready/valid width converter between arbitrary input and output word sizes.
+//
+// If one width is an integer multiple of the other, this wraps the appropriate
+// BaseJump PISO or SIPO primitive. For non-multiple widths it collects input
+// words into a staging register, emits OutDataWidth chunks, and preserves little
+// endian bit order by shifting low bits out first.
+//
+// Use this to bridge stream widths such as byte streams to vector chunks. Set
+// FastPush when the non-multiple path should immediately move newly staged data
+// toward the output in the same control step.
+
 `define SAFE_CLOG2(x) ( (((x)==1) || ((x)==0))? 1 : $clog2((x)))
 
 module ternip_gearbox_fifo #(

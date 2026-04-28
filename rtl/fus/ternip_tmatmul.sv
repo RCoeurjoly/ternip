@@ -24,6 +24,21 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
+// ternip_tmatmul
+//
+// Functional unit for ternary matrix/vector multiplication.
+//
+// Ternary matmul uses three required commands:
+//
+// IMPORT loads the input vector into the internal importvector.
+// GO streams the ternary matrix from DDR, multiplies it by importvector, and
+// stores the result in the internal exportvector.
+// EXPORT writes exportvector to the selected vector register.
+//
+// The unit accepts one command on in_* and then drives the vector-register and
+// DDR read interfaces until that command finishes. Use the commands in order:
+// IMPORT, then GO, then EXPORT.
+
 `define SAFE_CLOG2(x) ( (((x)==1) || ((x)==0))? 1 : $clog2((x)))
 
 module ternip_tmatmul #(
