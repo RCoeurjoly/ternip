@@ -26,35 +26,51 @@
 
 `define SAFE_CLOG2(x) ( (((x)==1) || ((x)==0))? 1 : $clog2((x)))
 
-module ternip_tmatmul import ternip_pkg::*; (
-    input logic           clk_i,
-    input logic           rst_ni,
+module ternip_tmatmul #(
+    parameter int D                   = ternip_pkg::D,
+    parameter int TmatmulParallelism  = ternip_pkg::TmatmulParallelism,
+    parameter int FixedPointPrecision = ternip_pkg::FixedPointPrecision,
+    parameter int VectorParallelism   = ternip_pkg::VectorParallelism,
+    parameter int NumVectorRegisters  = ternip_pkg::NumVectorRegisters,
+    parameter int NumChunksPerVector  = ternip_pkg::NumChunksPerVector,
+    parameter int DdrAddressWidth     = ternip_pkg::DdrAddressWidth,
+    parameter int MatrixSizeInBytes   = ternip_pkg::MatrixSizeInBytes,
 
-    output logic          in_ready_o,
-    input  logic          in_valid_i,
-    input  tmatmul_op_t   in_operation_i,
-    input  v_addr_t       in_vector_select_i,
-    input  ddr_address_t  in_go_matrix_address_i,
+    localparam type fixed_point_t     = logic signed [ternip_pkg::FixedPointPrecision-1:0],
+    localparam type vector_chunk_t    = fixed_point_t [VectorParallelism-1:0],
+    localparam type ternary_t         = logic signed [1:0],
+    localparam type vector_offset_t   = logic [$clog2(NumChunksPerVector)-1:0],
+    localparam type vector_select_t   = logic [$clog2(NumVectorRegisters)-1:0],
+    localparam type ddr_address_t     = logic [DdrAddressWidth-1:0]
+) (
+    input logic                     clk_i,
+    input logic                     rst_ni,
+
+    output logic                    in_ready_o,
+    input  logic                    in_valid_i,
+    input  ternip_pkg::tmatmul_op_e in_operation_i,
+    input  vector_select_t          in_vector_select_i,
+    input  ddr_address_t            in_go_matrix_address_i,
 
     // vector request interface
-    input  logic          vector_request_ready_i,
-    output logic          vector_request_valid_o,
-    output logic          vector_request_write_not_read_o,
-    output v_addr_t       vector_request_vector_select_o,
-    output DI_t           vector_request_vector_addr_o,
-    output vector_chunk_t vector_request_w_data_o,
+    input  logic                    vector_request_ready_i,
+    output logic                    vector_request_valid_o,
+    output logic                    vector_request_write_not_read_o,
+    output vector_select_t          vector_request_vector_select_o,
+    output vector_offset_t          vector_request_vector_addr_o,
+    output vector_chunk_t           vector_request_w_data_o,
 
     // vector read interface
-    output logic          vector_read_ready_o,
-    input  logic          vector_read_valid_i,
-    input  DI_t           vector_read_addr_i,
-    input  vector_chunk_t vector_read_data_i,
+    output logic                    vector_read_ready_o,
+    input  logic                    vector_read_valid_i,
+    input  vector_offset_t          vector_read_addr_i,
+    input  vector_chunk_t           vector_read_data_i,
 
     // ddr stream start config
-    input  logic          ddr_stream_ready_i,
-    output logic          ddr_stream_valid_o,
-    output ddr_address_t  ddr_stream_address_o,
-    output logic [31:0]   ddr_stream_length_o,
+    input  logic                    ddr_stream_ready_i,
+    output logic                    ddr_stream_valid_o,
+    output ddr_address_t            ddr_stream_address_o,
+    output logic [31:0]             ddr_stream_length_o,
 
     // read data is streamed in sequentially
     output logic                              ddr_r_ready_o,
@@ -64,7 +80,7 @@ module ternip_tmatmul import ternip_pkg::*; (
 
 localparam int RowParallelism = (TmatmulParallelism < D) ? (1) : (TmatmulParallelism / D);
 localparam int DdrReadsPerRow = (TmatmulParallelism > D) ? (1) : (D / TmatmulParallelism);
-localparam int ImportVectorRowWidth = min_int(TmatmulParallelism, D);
+localparam int ImportVectorRowWidth = ternip_pkg::min_int(TmatmulParallelism, D);
 
 `ifndef SYNTHESIS
 initial begin
@@ -97,8 +113,8 @@ enum logic [1:0] {
     WORKING
 } state_d, state_q = WAITING_FOR_IN; // for assertions at time=0
 
-tmatmul_op_t tmatmul_operation_d, tmatmul_operation_q;
-v_addr_t vector_select_d, vector_select_q;
+ternip_pkg::tmatmul_op_e tmatmul_operation_d, tmatmul_operation_q;
+vector_select_t vector_select_d, vector_select_q;
 
 localparam int DdrReadsPerMatrix = (D*D) / TmatmulParallelism;
 assign ddr_stream_length_o = MatrixSizeInBytes;
@@ -131,8 +147,8 @@ logic [`SAFE_CLOG2(DdrReadsPerRow):0] import_bram_addr_d, import_bram_addr_q;
 
 // Queued Instruction
 logic queued_valid_d, queued_valid_q;
-tmatmul_op_t queued_operation_d, queued_operation_q;
-v_addr_t queued_vector_select_d, queued_vector_select_q;
+ternip_pkg::tmatmul_op_e queued_operation_d, queued_operation_q;
+vector_select_t queued_vector_select_d, queued_vector_select_q;
 ddr_address_t queued_go_matrix_address_d, queued_go_matrix_address_q;
 
 // Multioperand Accumulator
@@ -197,17 +213,17 @@ ternip_pipelined_mem #(
 logic exportvector_request_ready;
 logic exportvector_request_valid;
 logic exportvector_request_write_not_read;
-logic [`SAFE_CLOG2(NumVectorChunks)-1:0] exportvector_request_addr;
+logic [`SAFE_CLOG2(NumChunksPerVector)-1:0] exportvector_request_addr;
 vector_chunk_t exportvector_request_w_data;
 
 logic exportvector_read_ready;
 logic exportvector_read_valid;
-logic [`SAFE_CLOG2(NumVectorChunks)-1:0] exportvector_read_addr;
+logic [`SAFE_CLOG2(NumChunksPerVector)-1:0] exportvector_read_addr;
 vector_chunk_t exportvector_read_data;
 
 ternip_pipelined_mem #(
     .DATA_WIDTH($bits(exportvector_read_data)),
-    .NUM_ENTRIES(NumVectorChunks)
+    .NUM_ENTRIES(NumChunksPerVector)
 ) exportvector (
     .clk_i,
     .rst_ni,
@@ -324,7 +340,7 @@ always_comb begin
 
         if (queued_valid_q) begin
             queued_valid_d = 0;
-            queued_operation_d = NO_TMATMUL_OP;
+            queued_operation_d = ternip_pkg::NO_TMATMUL_OP;
             queued_vector_select_d = 'x;
             queued_go_matrix_address_d = 'x;
 
@@ -332,17 +348,17 @@ always_comb begin
             vector_select_d = queued_vector_select_q;
             ddr_stream_address_d = queued_go_matrix_address_q;
 
-            state_d = (tmatmul_operation_d == GO) ? (WAITING_FOR_DDR_STREAM_READY) : (WORKING);
+            state_d = (tmatmul_operation_d == ternip_pkg::GO) ? (WAITING_FOR_DDR_STREAM_READY) : (WORKING);
 
         end else if (in_valid_i) begin
             tmatmul_operation_d = in_operation_i;
             vector_select_d = in_vector_select_i;
             ddr_stream_address_d = in_go_matrix_address_i;
 
-            state_d = (tmatmul_operation_d == GO) ? (WAITING_FOR_DDR_STREAM_READY) : (WORKING);
+            state_d = (tmatmul_operation_d == ternip_pkg::GO) ? (WAITING_FOR_DDR_STREAM_READY) : (WORKING);
         end
 
-    end else if ((state_q == WAITING_FOR_DDR_STREAM_READY) && (tmatmul_operation_q == GO)) begin
+    end else if ((state_q == WAITING_FOR_DDR_STREAM_READY) && (tmatmul_operation_q == ternip_pkg::GO)) begin
 
         ddr_stream_valid_o = 1;
         if (ddr_stream_ready_i) begin
@@ -350,10 +366,10 @@ always_comb begin
             state_d = WORKING;
         end
 
-    end else if ((state_q == WORKING) && (tmatmul_operation_q == IMPORT)) begin
+    end else if ((state_q == WORKING) && (tmatmul_operation_q == ternip_pkg::IMPORT)) begin
 
         // Request chunks from vector registers
-        if (importvector_counter_q < NumVectorChunks) begin
+        if (importvector_counter_q < NumChunksPerVector) begin
             vector_request_valid_o = 1;
             vector_request_write_not_read_o = 0;
             vector_request_vector_select_o = vector_select_q;
@@ -377,11 +393,11 @@ always_comb begin
             import_bram_addr_d++;
             if (import_bram_addr_q >= DdrReadsPerRow-1) begin
                 state_d = WAITING_FOR_IN;
-                tmatmul_operation_d = NO_TMATMUL_OP;
+                tmatmul_operation_d = ternip_pkg::NO_TMATMUL_OP;
             end
         end
 
-    end else if ((state_q == WORKING) && (tmatmul_operation_q == GO)) begin
+    end else if ((state_q == WORKING) && (tmatmul_operation_q == ternip_pkg::GO)) begin
 
         // allow instruction queueing
         in_ready_o = !queued_valid_q;
@@ -435,17 +451,17 @@ always_comb begin
             exportvector_request_w_data = gbfifo_export_out_data;
 
             exportvector_counter_d++;
-            if (exportvector_counter_q >= NumVectorChunks-1) begin
+            if (exportvector_counter_q >= NumChunksPerVector-1) begin
                 state_d = WAITING_FOR_IN;
-                tmatmul_operation_d = NO_TMATMUL_OP;
+                tmatmul_operation_d = ternip_pkg::NO_TMATMUL_OP;
                 exportvector_counter_d = 0;
             end
         end
 
-    end else if ((state_q == WORKING) && (tmatmul_operation_q == EXPORT)) begin
+    end else if ((state_q == WORKING) && (tmatmul_operation_q == ternip_pkg::EXPORT)) begin
 
         // Read chunks from exportvector
-        if (exportvector_counter_q < NumVectorChunks) begin
+        if (exportvector_counter_q < NumChunksPerVector) begin
             exportvector_request_valid = 1;
             exportvector_request_write_not_read = 0;
             exportvector_request_addr = exportvector_counter_q;
@@ -460,9 +476,9 @@ always_comb begin
             vector_request_vector_select_o = vector_select_q;
             vector_request_vector_addr_o = exportvector_read_addr;
             vector_request_w_data_o = exportvector_read_data;
-            if (exportvector_read_addr >= NumVectorChunks-1) begin
+            if (exportvector_read_addr >= NumChunksPerVector-1) begin
                 state_d = WAITING_FOR_IN;
-                tmatmul_operation_d = NO_TMATMUL_OP;
+                tmatmul_operation_d = ternip_pkg::NO_TMATMUL_OP;
             end
         end
 
@@ -493,9 +509,9 @@ always_ff @(posedge clk_i) begin
     `ifndef SYNTHESIS
     if (!rst_ni) begin
         vector_select_q <= 'x;
-        tmatmul_operation_q <= NO_TMATMUL_OP;
+        tmatmul_operation_q <= ternip_pkg::NO_TMATMUL_OP;
 
-        queued_operation_q <= NO_TMATMUL_OP;
+        queued_operation_q <= ternip_pkg::NO_TMATMUL_OP;
         queued_vector_select_q <= 'x;
         queued_go_matrix_address_q <= 'x;
 

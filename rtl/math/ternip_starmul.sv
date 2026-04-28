@@ -24,7 +24,7 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-module ternip_starmul import ternip_pkg::*; #(
+module ternip_starmul #(
     parameter int DataWidth = 32
 ) (
     input  logic                        clk_i,

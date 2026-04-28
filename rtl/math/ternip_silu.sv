@@ -26,7 +26,14 @@
 
 `include "ternip_readmem_path.svh"
 
-module ternip_silu import ternip_pkg::*; (
+module ternip_silu #(
+    parameter int FixedPointPrecision = ternip_pkg::FixedPointPrecision,
+    parameter int FixedPointExponent  = ternip_pkg::FixedPointExponent,
+    parameter bit UseHardSigmoid      = ternip_pkg::UseHardSigmoid,
+    parameter ternip_pkg::mul_impl_e MultiplicationImplementation = ternip_pkg::MultiplicationImplementation,
+
+    localparam type fixed_point_t = logic signed [ternip_pkg::FixedPointPrecision-1:0]
+) (
     input  logic         clk_i,
     input  logic         rst_ni,
 
@@ -38,6 +45,9 @@ module ternip_silu import ternip_pkg::*; (
     output logic         out_valid_o,
     output fixed_point_t y_o
 );
+
+localparam fixed_point_t FixedPointOne = ternip_pkg::fixed_point_one(FixedPointExponent);
+localparam int FixedPointUnaryOperationLutSize = UseHardSigmoid ? 1 : (2 ** FixedPointPrecision);
 
 if (UseHardSigmoid) begin : gen_hard_silu
 
@@ -99,7 +109,8 @@ if (UseHardSigmoid) begin : gen_hard_silu
         .InBPrecision(FixedPointPrecision),
         .InBExponent(FixedPointExponent),
         .OutPrecision(FixedPointPrecision),
-        .OutExponent(FixedPointExponent)
+        .OutExponent(FixedPointExponent),
+        .Implementation(MultiplicationImplementation)
     ) ternip_mul (
         .clk_i,
         .rst_ni,

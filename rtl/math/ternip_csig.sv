@@ -26,10 +26,19 @@
 
 `include "ternip_readmem_path.svh"
 
-module ternip_csig import ternip_pkg::*; (
+module ternip_csig #(
+    parameter int  FixedPointPrecision = ternip_pkg::FixedPointPrecision,
+    parameter int  FixedPointExponent  = ternip_pkg::FixedPointExponent,
+    parameter bit  UseHardSigmoid      = ternip_pkg::UseHardSigmoid,
+
+    localparam type fixed_point_t = logic signed [ternip_pkg::FixedPointPrecision-1:0]
+) (
     input  fixed_point_t a_i,
     output fixed_point_t y_o
 );
+
+localparam fixed_point_t FixedPointOne = ternip_pkg::fixed_point_one(FixedPointExponent);
+localparam int FixedPointUnaryOperationLutSize = UseHardSigmoid ? 1 : (2 ** FixedPointPrecision);
 
 if (UseHardSigmoid) begin : gen_hard_csig
 

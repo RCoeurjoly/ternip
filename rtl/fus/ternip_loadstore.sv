@@ -24,28 +24,42 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-module ternip_vector_load_store import ternip_pkg::*; (
-    input  logic                  clk_i,
-    input  logic                  rst_ni,
+module ternip_loadstore #(
+    parameter int D                   = ternip_pkg::D,
+    parameter int FixedPointPrecision = ternip_pkg::FixedPointPrecision,
+    parameter int VectorParallelism   = ternip_pkg::VectorParallelism,
+    parameter int NumVectorRegisters  = ternip_pkg::NumVectorRegisters,
+    parameter int NumChunksPerVector  = ternip_pkg::NumChunksPerVector,
+    parameter int DdrAddressWidth     = ternip_pkg::DdrAddressWidth,
+    parameter int BatchSize           = ternip_pkg::BatchSize,
 
-    output logic                  in_ready_o,
-    input  logic                  in_valid_i,
-    input  load_store_operation_t in_vector_operation_i,
-    input  ddr_address_t          in_vector_memory_address_i,
-    input  v_addr_t               in_vector_select_i,
+    localparam type fixed_point_t     = logic signed [ternip_pkg::FixedPointPrecision-1:0],
+    localparam type vector_chunk_t    = fixed_point_t [VectorParallelism-1:0],
+    localparam type vector_offset_t   = logic [$clog2(NumChunksPerVector)-1:0],
+    localparam type vector_select_t   = logic [$clog2(NumVectorRegisters)-1:0],
+    localparam type ddr_address_t     = logic [DdrAddressWidth-1:0]
+) (
+    input  logic                      clk_i,
+    input  logic                      rst_ni,
+
+    output logic                      in_ready_o,
+    input  logic                      in_valid_i,
+    input  ternip_pkg::loadstore_op_e in_vector_operation_i,
+    input  ddr_address_t              in_vector_memory_address_i,
+    input  vector_select_t            in_vector_select_i,
 
     // vector request interface
     input  logic                  vector_request_ready_i,
     output logic                  vector_request_valid_o,
     output logic                  vector_request_write_not_read_o,
-    output v_addr_t               vector_request_vector_select_o,
-    output DI_t                   vector_request_vector_addr_o,
+    output vector_select_t        vector_request_vector_select_o,
+    output vector_offset_t        vector_request_vector_addr_o,
     output vector_chunk_t         vector_request_w_data_o,
 
     // vector read interface
     output logic                  vector_read_ready_o,
     input  logic                  vector_read_valid_i,
-    input  DI_t                   vector_read_addr_i,
+    input  vector_offset_t        vector_read_addr_i,
     input  vector_chunk_t         vector_read_data_i,
 
     // ddr stream start config
@@ -68,6 +82,8 @@ module ternip_vector_load_store import ternip_pkg::*; (
     output logic [63:0]           debug_o
 );
 
+localparam int VectorSizeInBytes = D * FixedPointPrecision / 8;
+
 enum logic [1:0] {
     WAITING_FOR_IN,
     WAITING_FOR_DDR_STREAM_READY,
@@ -75,8 +91,8 @@ enum logic [1:0] {
 } state_d, state_q = WAITING_FOR_IN; // for assertions at time=0
 
 logic [$clog2(D):0] vector_counter_d, vector_counter_q;
-load_store_operation_t vector_operation_d, vector_operation_q;
-v_addr_t vector_select_d, vector_select_q;
+ternip_pkg::loadstore_op_e vector_operation_d, vector_operation_q;
+vector_select_t vector_select_d, vector_select_q;
 ddr_address_t vector_memory_address_d, vector_memory_address_q;
 
 always_ff @(posedge clk_i) begin
@@ -136,10 +152,10 @@ always_comb begin
         vector_counter_d = 0;
         ddr_stream_valid_o = 1;
         ddr_stream_address_o = vector_memory_address_q;
-        ddr_stream_write_not_read_o = (vector_operation_q == SV);
+        ddr_stream_write_not_read_o = (vector_operation_q == ternip_pkg::SV);
         if (ddr_stream_ready_i)
             state_d = WORKING;
-    end else if ((state_q == WORKING)&&(vector_operation_q == LDV)) begin
+    end else if ((state_q == WORKING)&&(vector_operation_q == ternip_pkg::LDV)) begin
         // read from ddr and write to vector
         ddr_r_ready_o = vector_request_ready_i;
         if (ddr_r_ready_o && ddr_r_valid_i) begin
@@ -148,13 +164,13 @@ always_comb begin
             vector_request_vector_addr_o = vector_counter_q;
             vector_request_w_data_o = ddr_r_data_i;
             vector_counter_d++;
-            if (vector_counter_q == NumVectorChunks-1) begin
+            if (vector_counter_q == NumChunksPerVector-1) begin
                 state_d = WAITING_FOR_IN;
             end
         end
-    end else if ((state_q == WORKING)&&(vector_operation_q == SV)) begin
+    end else if ((state_q == WORKING)&&(vector_operation_q == ternip_pkg::SV)) begin
         // read from vector
-        if (vector_counter_q != NumVectorChunks) begin
+        if (vector_counter_q != NumChunksPerVector) begin
             vector_request_valid_o = 1;
             vector_request_write_not_read_o = 0;
             vector_request_vector_addr_o = vector_counter_q;
@@ -165,7 +181,7 @@ always_comb begin
         ddr_w_valid_o = vector_read_valid_i;
         ddr_w_data_o = vector_read_data_i;
         if (ddr_w_ready_i && ddr_w_valid_o) begin
-            if (vector_read_addr_i == NumVectorChunks-1) state_d = WAITING_FOR_IN;
+            if (vector_read_addr_i == NumChunksPerVector-1) state_d = WAITING_FOR_IN;
         end
     end
 end
@@ -186,7 +202,7 @@ always_ff @(posedge clk_i) begin
     `ifndef SYNTHESIS
     if (!rst_ni) begin
         vector_counter_q <= 'x;
-        vector_operation_q <= NO_LS_OP;
+        vector_operation_q <= ternip_pkg::NO_LS_OP;
 
         vector_select_q <= 'x;
         vector_memory_address_q <= 'x;

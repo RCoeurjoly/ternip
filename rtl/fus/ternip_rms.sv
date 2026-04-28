@@ -24,28 +24,52 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-module ternip_rms import ternip_pkg::*; (
-    input  logic          clk_i,
-    input  logic          rst_ni,
+module ternip_rms #(
+    parameter int FixedPointPrecision         = ternip_pkg::FixedPointPrecision,
+    parameter int FixedPointExponent          = ternip_pkg::FixedPointExponent,
+    parameter int VectorParallelism           = ternip_pkg::VectorParallelism,
+    parameter int NumVectorRegisters          = ternip_pkg::NumVectorRegisters,
+    parameter int NumChunksPerVector          = ternip_pkg::NumChunksPerVector,
+    parameter int ImmediateWidth              = ternip_pkg::ImmediateWidth,
+    parameter int RmsSqaSumPrecision          = ternip_pkg::RmsSqaSumPrecision,
+    parameter int RmsSqaSumExponent           = ternip_pkg::RmsSqaSumExponent,
+    parameter int RmsValueReciprocalPrecision = ternip_pkg::RmsValueReciprocalPrecision,
+    parameter int RmsValueReciprocalExponent  = ternip_pkg::RmsValueReciprocalExponent,
+    parameter int RmsSqrtInputPrecision       = ternip_pkg::RmsSqrtInputPrecision,
+    parameter int RmsSqrtInputExponent        = ternip_pkg::RmsSqrtInputExponent,
+    parameter int RmsAccumulatorWidth         = ternip_pkg::RmsAccumulatorWidth,
 
-    output logic          in_ready_o,
-    input  logic          in_valid_i,
-    input  rms_op_t       in_rms_op_i,
-    input  v_addr_t       in_vector1_select_i,
-    input  v_addr_t       in_vector2_select_i,
-    input  immediate_t    in_rms_length_i,
+    localparam type fixed_point_t          = logic signed [ternip_pkg::FixedPointPrecision-1:0],
+    localparam type vector_chunk_t         = fixed_point_t [VectorParallelism-1:0],
+    localparam type vector_offset_t        = logic [$clog2(NumChunksPerVector)-1:0],
+    localparam type vector_select_t        = logic [$clog2(NumVectorRegisters)-1:0],
+    localparam type immediate_t            = logic [ImmediateWidth-1:0],
+    localparam type rms_sqa_sum_t          = logic signed [RmsSqaSumPrecision-1:0],
+    localparam type rms_accumulator_t      = logic signed [RmsAccumulatorWidth-1:0],
+    localparam type rms_value_reciprocal_t = logic signed [RmsValueReciprocalPrecision-1:0],
+    localparam type rms_sqrt_input_t       = logic signed [RmsSqrtInputPrecision-1:0]
+) (
+    input  logic                clk_i,
+    input  logic                rst_ni,
 
-    input  logic          vector_request_ready_i,
-    output logic          vector_request_valid_o,
-    output logic          vector_request_write_not_read_o,
-    output v_addr_t       vector_request_vector_select_o,
-    output DI_t           vector_request_vector_addr_o,
-    output vector_chunk_t vector_request_w_data_o,
+    output logic                in_ready_o,
+    input  logic                in_valid_i,
+    input  ternip_pkg::rms_op_e in_rms_op_i,
+    input  vector_select_t      in_vector1_select_i,
+    input  vector_select_t      in_vector2_select_i,
+    input  immediate_t          in_rms_length_i,
 
-    output logic          vector_read_ready_o,
-    input  logic          vector_read_valid_i,
-    input  DI_t           vector_read_addr_i,
-    input  vector_chunk_t vector_read_data_i,
+    input  logic           vector_request_ready_i,
+    output logic           vector_request_valid_o,
+    output logic           vector_request_write_not_read_o,
+    output vector_select_t vector_request_vector_select_o,
+    output vector_offset_t vector_request_vector_addr_o,
+    output vector_chunk_t  vector_request_w_data_o,
+
+    output logic           vector_read_ready_o,
+    input  logic           vector_read_valid_i,
+    input  vector_offset_t vector_read_addr_i,
+    input  vector_chunk_t  vector_read_data_i,
 
     // debug ports
     output logic                  accumulator_out_valid_o,
@@ -54,10 +78,10 @@ module ternip_rms import ternip_pkg::*; (
     output logic                  rms_value_reciprocal_valid_o
 );
 
-rms_op_t    rms_op_d, rms_op_q;
-v_addr_t    in_vector1_select_d, in_vector1_select_q;
-v_addr_t    in_vector2_select_d, in_vector2_select_q;
-immediate_t in_rms_length_d, in_rms_length_q;
+ternip_pkg::rms_op_e rms_op_d, rms_op_q;
+vector_select_t      in_vector1_select_d, in_vector1_select_q;
+vector_select_t      in_vector2_select_d, in_vector2_select_q;
+immediate_t          in_rms_length_d, in_rms_length_q;
 
 enum logic [1:0] {
     WAITING_FOR_IN,
@@ -66,8 +90,8 @@ enum logic [1:0] {
     WAITING_FOR_ACCUMULATOR
 } state_d, state_q = WAITING_FOR_IN;
 
-logic [$clog2(NumVectorChunks):0] vector_read_counter_d, vector_read_counter_q;
-logic [$clog2(NumVectorChunks):0] vector_processed_counter_d, vector_processed_counter_q;
+logic [$clog2(NumChunksPerVector):0] vector_read_counter_d, vector_read_counter_q;
+logic [$clog2(NumChunksPerVector):0] vector_processed_counter_d, vector_processed_counter_q;
 
 
 // Accumulate
@@ -192,7 +216,7 @@ ternip_div #(
     .InBExponent(RmsSqaSumExponent),
     .OutPrecision(RmsSqrtInputPrecision),
     .OutExponent(RmsSqrtInputExponent),
-    .Implementation(DIV_BSG)
+    .Implementation(ternip_pkg::DIV_BSG)
 ) rms_value_reciprocal_divider (
     .clk_i,
     .rst_ni,
@@ -344,27 +368,27 @@ always_comb begin
             in_vector1_select_d = in_vector1_select_i;
             in_vector2_select_d = in_vector2_select_i;
             in_rms_length_d = in_rms_length_i;
-            if (in_rms_op_i == CLEAR) begin
+            if (in_rms_op_i == ternip_pkg::CLEAR) begin
                 state_d = SENDING_FINAL_TO_ACCUMULATOR;
                 rms_value_reciprocal_d = 'x;
                 rms_value_reciprocal_valid_d = 0;
-            end else if (in_rms_op_i == ACCUMULATE) begin
+            end else if (in_rms_op_i == ternip_pkg::ACCUMULATE) begin
                 state_d = WORKING;
                 vector_read_counter_d = 0;
                 vector_processed_counter_d = 0;
                 rms_value_reciprocal_d = 'x;
                 rms_value_reciprocal_valid_d = 0;
-            end else if (in_rms_op_i == FINISH_ACCUMULATE) begin
+            end else if (in_rms_op_i == ternip_pkg::FINISH_ACCUMULATE) begin
                 state_d = SENDING_FINAL_TO_ACCUMULATOR;
                 rms_value_reciprocal_d = 'x;
                 rms_value_reciprocal_valid_d = 0;
-            end else if (in_rms_op_i == NORM) begin
+            end else if (in_rms_op_i == ternip_pkg::NORM) begin
                 state_d = WORKING;
                 vector_read_counter_d = 0;
                 vector_processed_counter_d = 0;
             end
         end
-    end else if ((state_q == SENDING_FINAL_TO_ACCUMULATOR) && (rms_op_q == CLEAR)) begin
+    end else if ((state_q == SENDING_FINAL_TO_ACCUMULATOR) && (rms_op_q == ternip_pkg::CLEAR)) begin
         accumulator_in_valid = 1;
         accumulator_in_final = 1;
         accumulator_in_operand = 'x;
@@ -372,17 +396,17 @@ always_comb begin
         if (accumulator_in_ready) begin
             state_d = WAITING_FOR_ACCUMULATOR;
         end
-    end else if ((state_q == WAITING_FOR_ACCUMULATOR) && (rms_op_q == CLEAR)) begin
+    end else if ((state_q == WAITING_FOR_ACCUMULATOR) && (rms_op_q == ternip_pkg::CLEAR)) begin
         accumulator_out_ready = 1;
         if (accumulator_out_valid) begin
             state_d = WAITING_FOR_IN;
-            rms_op_d = NO_RMS_OP;
+            rms_op_d = ternip_pkg::NO_RMS_OP;
             in_vector1_select_d = 'x;
             in_vector2_select_d = 'x;
             in_rms_length_d  = 'x;
         end
-    end else if ((state_q == WORKING) && (rms_op_q == ACCUMULATE)) begin
-        if (vector_read_counter_q < NumVectorChunks) begin // read request
+    end else if ((state_q == WORKING) && (rms_op_q == ternip_pkg::ACCUMULATE)) begin
+        if (vector_read_counter_q < NumChunksPerVector) begin // read request
             vector_request_valid_o = 1;
             vector_request_write_not_read_o = 0;
             vector_request_vector_addr_o = vector_read_counter_q;
@@ -400,9 +424,9 @@ always_comb begin
         accumulator_in_operand = square_result_out;
         if (accumulator_in_ready && accumulator_in_valid) begin
             vector_processed_counter_d++;
-            if (vector_processed_counter_q == NumVectorChunks-1) begin
+            if (vector_processed_counter_q == NumChunksPerVector-1) begin
                 state_d = WAITING_FOR_IN;
-                rms_op_d = NO_RMS_OP;
+                rms_op_d = ternip_pkg::NO_RMS_OP;
                 in_vector1_select_d = 'x;
                 in_vector2_select_d = 'x;
                 in_rms_length_d  = 'x;
@@ -410,7 +434,7 @@ always_comb begin
                 vector_processed_counter_d = 'x;
             end
         end
-    end else if ((state_q == SENDING_FINAL_TO_ACCUMULATOR) && (rms_op_q == FINISH_ACCUMULATE)) begin
+    end else if ((state_q == SENDING_FINAL_TO_ACCUMULATOR) && (rms_op_q == ternip_pkg::FINISH_ACCUMULATE)) begin
         accumulator_in_valid = 1;
         accumulator_in_final = 1;
         accumulator_in_operand = 0;
@@ -418,7 +442,7 @@ always_comb begin
         if (accumulator_in_ready) begin
             state_d = WAITING_FOR_ACCUMULATOR;
         end
-    end else if ((state_q == WAITING_FOR_ACCUMULATOR) && (rms_op_q == FINISH_ACCUMULATE)) begin
+    end else if ((state_q == WAITING_FOR_ACCUMULATOR) && (rms_op_q == ternip_pkg::FINISH_ACCUMULATE)) begin
         accumulator_out_ready = div_in_ready;
         if (accumulator_out_valid) begin
             state_d = WORKING;
@@ -430,19 +454,19 @@ always_comb begin
             div_in_dividend = in_rms_length_q;
             div_in_divisor = (accumulator_out_result <= 0) ? 1 /* TODO */ : accumulator_out_result;
         end
-    end else if ((state_q == WORKING) && (rms_op_q == FINISH_ACCUMULATE)) begin
+    end else if ((state_q == WORKING) && (rms_op_q == ternip_pkg::FINISH_ACCUMULATE)) begin
         // wait for rms_value_reciprocal_divider -> ternip_sqrt -> valid
         rms_sqrt_out_ready = 1;
         if (rms_sqrt_out_valid) begin
             rms_value_reciprocal_d = rms_sqrt_y;
             rms_value_reciprocal_valid_d = 1;
             state_d = WAITING_FOR_IN;
-            rms_op_d = NO_RMS_OP;
+            rms_op_d = ternip_pkg::NO_RMS_OP;
             in_vector1_select_d = 'x;
             in_vector2_select_d = 'x;
             in_rms_length_d  = 'x;
         end
-    end else if ((state_q == WORKING) && (rms_op_q == NORM)) begin
+    end else if ((state_q == WORKING) && (rms_op_q == ternip_pkg::NORM)) begin
         // read response -> multiplier
         vector_read_ready_o = norm_mul_in_ready[0];
         norm_mul_in_valid = {VectorParallelism{ vector_read_valid_i }};
@@ -460,9 +484,9 @@ always_comb begin
                 norm_mul_out_result_buffer_d = 'x;
                 norm_mul_out_result_buffer_valid_d = 0;
                 vector_processed_counter_d++;
-                if (vector_processed_counter_q >= NumVectorChunks-1) begin
+                if (vector_processed_counter_q >= NumChunksPerVector-1) begin
                     state_d = WAITING_FOR_IN;
-                    rms_op_d = NO_RMS_OP;
+                    rms_op_d = ternip_pkg::NO_RMS_OP;
                     in_vector1_select_d = 'x;
                     in_vector2_select_d = 'x;
                     in_rms_length_d  = 'x;
@@ -470,7 +494,7 @@ always_comb begin
                     vector_processed_counter_d = 'x;
                 end
             end
-        end else if (vector_read_counter_q < NumVectorChunks) begin // read request
+        end else if (vector_read_counter_q < NumChunksPerVector) begin // read request
             // if a read was just received, do not do another read
             vector_request_valid_o = 1;
             vector_request_write_not_read_o = 0;
@@ -514,7 +538,7 @@ always_ff @(posedge clk_i) begin
     norm_mul_out_result_buffer_q <= norm_mul_out_result_buffer_d;
     `ifndef SYNTHESIS
     if (!rst_ni) begin
-        rms_op_q <= NO_RMS_OP;
+        rms_op_q <= ternip_pkg::NO_RMS_OP;
         vector_read_counter_q <= 'x;
         vector_processed_counter_q <= 'x;
 

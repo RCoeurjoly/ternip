@@ -24,7 +24,7 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-module ternip_sqrt import ternip_pkg::*; #(
+module ternip_sqrt #(
     parameter int InPrecision = 8,
     parameter int InExponent = -3,
     parameter int OutPrecision = 8,
@@ -45,7 +45,7 @@ module ternip_sqrt import ternip_pkg::*; #(
 localparam int ExtraGuardBits = 1;
 localparam int PostSqrtInternalExponent = OutExponent - ExtraGuardBits;
 localparam int PreSqrtInternalExponent  = 2 * PostSqrtInternalExponent;
-localparam int SqrtInternalPrecision = max_int(InExponent - (PreSqrtInternalExponent - InPrecision), 1);
+localparam int SqrtInternalPrecision = ternip_pkg::max_int(InExponent - (PreSqrtInternalExponent - InPrecision), 1);
 
 `ifndef SYNTHESIS
 initial assert(SqrtInternalPrecision + PreSqrtInternalExponent >= InPrecision + InExponent);
@@ -147,13 +147,13 @@ if (SqrtInternalPrecision <= 52) always @(posedge clk_i) #2ps begin
         @(posedge clk_i); #2ps;
     end
 
-    if (abs_int(expected_queue[0].expected_internal_y - internal_y) >> ExtraGuardBits) begin
+    if (ternip_pkg::abs_int(expected_queue[0].expected_internal_y - internal_y) >> ExtraGuardBits) begin
         $display("======== FAILING INTEGER SQRT ========");
         $display("         internal_a = %b %0d", expected_queue[0].internal_a, expected_queue[0].internal_a);
         $display("         internal_y = %b %0d", internal_y, internal_y);
         $display("expected_internal_y = %b %0d", expected_queue[0].expected_internal_y, expected_queue[0].expected_internal_y);
         // $fatal;
-    end else if (abs_int(expected_queue[0].expected_y - y_o) > 1) begin
+    end else if (ternip_pkg::abs_int(expected_queue[0].expected_y - y_o) > 1) begin
         $display("======== FAILING SQRT ========");
         $display("               InPrecision=%0d", InPrecision);
         $display("                InExponent=%0d", InExponent);

@@ -7,8 +7,8 @@ localparam int LutParallelism = 1;
 localparam int FixedPointPrecision = 8;
 localparam int FixedPointExponent = -3;
 
-parameter mul_impl_t MultiplicationImplementation = MUL_BSG;
-parameter div_impl_t DivisionImplementation = DIV_BSG;
+parameter mul_impl_e MultiplicationImplementation = MUL_BSG;
+parameter div_impl_e DivisionImplementation = DIV_BSG;
 
 localparam bit UseHardSigmoid = 1;
 

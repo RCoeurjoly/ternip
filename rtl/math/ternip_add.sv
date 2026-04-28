@@ -24,11 +24,17 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-module ternip_add import ternip_pkg::*; (
+module ternip_add #(
+    parameter int FixedPointPrecision = ternip_pkg::FixedPointPrecision,
+    localparam type fixed_point_t = logic signed [ternip_pkg::FixedPointPrecision-1:0]
+) (
     input  fixed_point_t a_i,
     input  fixed_point_t b_i,
     output fixed_point_t y_o
 );
+
+localparam fixed_point_t FixedPointMin = ternip_pkg::fixed_point_min(FixedPointPrecision);
+localparam fixed_point_t FixedPointMax = ternip_pkg::fixed_point_max(FixedPointPrecision);
 
 logic signed [FixedPointPrecision:0] internal;
 always_comb begin

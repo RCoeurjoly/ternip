@@ -35,33 +35,33 @@ typedef enum logic [3:0] {
     SIG,
     CSIG,
     SILU
-} operation_t;
+} rowwise_op_e;
 
 typedef enum logic [1:0] {
     MUL_BSG,
     MUL_ROUNDROBIN,
     MUL_STAR,
     MUL_NONE
-} mul_impl_t;
+} mul_impl_e;
 
 typedef enum logic [1:0] {
     DIV_BSG,
     DIV_ROUNDROBIN,
     DIV_NONE
-} div_impl_t;
+} div_impl_e;
 
 typedef enum logic [1:0] {
     NO_LS_OP,
     LDV,
     SV
-} load_store_operation_t;
+} loadstore_op_e;
 
 typedef enum logic [1:0] {
     NO_TMATMUL_OP,
     IMPORT,
     GO,
     EXPORT
-} tmatmul_op_t;
+} tmatmul_op_e;
 
 typedef enum logic [2:0] {
     NO_RMS_OP,
@@ -69,16 +69,16 @@ typedef enum logic [2:0] {
     ACCUMULATE,
     FINISH_ACCUMULATE,
     NORM
-} rms_op_t;
+} rms_op_e;
 
 typedef enum logic [2:0] {
     NO_FU,
-    LOAD_STORE,
+    LOADSTORE,
     ROWWISE_OPERATION,
     TMATMUL,
     RMS,
     STALL
-} fu_t;
+} fu_e;
 
 function automatic integer abs_int(integer a);
     return ((a<0) ? -a : a);
@@ -94,6 +94,18 @@ endfunction
 
 function automatic integer clamp_int(integer lo, integer x, integer hi);
     return max_int(lo, min_int(x, hi));
+endfunction
+
+function automatic integer fixed_point_min(integer precision);
+    return (1 << (precision-1));
+endfunction
+
+function automatic integer fixed_point_max(integer precision);
+    return (1 << (precision-1)) - 1;
+endfunction
+
+function automatic integer fixed_point_one(integer exponent);
+    return (1 <<< -exponent);
 endfunction
 
 
@@ -147,12 +159,7 @@ localparam int RmsSqrtInputUnaryOperationLutSize = (2 ** RmsSqrtInputPrecision);
 // Instruction Info
 
 typedef fixed_point_t [VectorParallelism-1:0] vector_chunk_t;
-localparam int NumVectorChunks = D / VectorParallelism;
-
-// index into vector
-typedef logic [$clog2(NumVectorChunks)-1:0] DI_t;
-
-typedef logic [$clog2(NumVectorRegisters)-1:0] v_addr_t;
+localparam int NumChunksPerVector = D / VectorParallelism;
 
 typedef logic [DdrAddressWidth-1:0] ddr_address_t;
 typedef logic [ImmediateWidth-1:0] immediate_t;
@@ -161,24 +168,24 @@ typedef ternary_t [TmatmulParallelism-1:0] tmatmul_stream_data_t;
 
 localparam int InstructionUnusedBitsWidth =
     InstructionWidth
-    - ($bits(fu_t)
-       + $bits(operation_t)
-       + $bits(v_addr_t)*3
-       + $bits(load_store_operation_t)
-       + $bits(tmatmul_op_t)
-       + $bits(rms_op_t)
+    - ($bits(fu_e)
+       + $bits(rowwise_op_e)
+       + $bits(vector_select_t)*3
+       + $bits(loadstore_op_e)
+       + $bits(tmatmul_op_e)
+       + $bits(rms_op_e)
        + $bits(ddr_address_t));
 
 typedef struct packed {
     logic [InstructionUnusedBitsWidth-1:0] _unused;
-    fu_t fu;
-    operation_t operation;
-    v_addr_t v_a;
-    v_addr_t v_b;
-    v_addr_t v_y;
-    load_store_operation_t load_store_operation;
-    tmatmul_op_t tmatmul_op;
-    rms_op_t rms_op;
+    fu_e fu;
+    rowwise_op_e rowwise_op;
+    vector_select_t v_a;
+    vector_select_t v_b;
+    vector_select_t v_y;
+    loadstore_op_e loadstore_op;
+    tmatmul_op_e tmatmul_op;
+    rms_op_e rms_op;
     ddr_address_t ddr_address;
 } instruction_t;
 

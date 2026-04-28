@@ -24,14 +24,14 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-module ternip_div import ternip_pkg::*; #(
-    parameter int InAPrecision = 8,
-    parameter int InAExponent  = -3,
-    parameter int InBPrecision = 8,
-    parameter int InBExponent  = -3,
-    parameter int OutPrecision = 8,
-    parameter int OutExponent  = -3,
-    parameter div_impl_t Implementation = DivisionImplementation
+module ternip_div #(
+    parameter int InAPrecision = ternip_pkg::FixedPointPrecision,
+    parameter int InAExponent  = ternip_pkg::FixedPointExponent,
+    parameter int InBPrecision = ternip_pkg::FixedPointPrecision,
+    parameter int InBExponent  = ternip_pkg::FixedPointExponent,
+    parameter int OutPrecision = ternip_pkg::FixedPointPrecision,
+    parameter int OutExponent  = ternip_pkg::FixedPointExponent,
+    parameter ternip_pkg::div_impl_e Implementation = ternip_pkg::DivisionImplementation
 ) (
     input  logic                           clk_i,
     input  logic                           rst_ni,
@@ -48,7 +48,7 @@ module ternip_div import ternip_pkg::*; #(
 
 localparam int ALeftShiftAmount = InBPrecision + 2;
 localparam int DivInternalPrecision = InAPrecision + ALeftShiftAmount + 1
-    + ((Implementation==DIV_BSG)&&((InAPrecision+ALeftShiftAmount+1)%2));
+    + ((Implementation==ternip_pkg::DIV_BSG)&&((InAPrecision+ALeftShiftAmount+1)%2));
     // ensure DivInternalPrecision is even for bsg_idiv_iterative.bits_per_iter_p=2
 
 localparam int InternalAInternalExponent = InAExponent - ALeftShiftAmount;
@@ -112,7 +112,7 @@ always_ff @(posedge clk_i) begin
     end
 end
 
-if (Implementation == DIV_BSG) begin : div_bsg
+if (Implementation == ternip_pkg::DIV_BSG) begin : div_bsg
 
     // https://github.com/bespoke-silicon-group/basejump_stl/blob/a43571d2/bsg_misc/bsg_idiv_iterative.sv
     bsg_idiv_iterative #(
@@ -134,7 +134,7 @@ if (Implementation == DIV_BSG) begin : div_bsg
         .yumi_i(div_out_ready && div_out_valid)
     );
 
-end else if (Implementation == DIV_ROUNDROBIN) begin : div_roundrobin
+end else if (Implementation == ternip_pkg::DIV_ROUNDROBIN) begin : div_roundrobin
 
     ternip_round_robin_operation #(
         .DataWidth(DivInternalPrecision),
@@ -204,7 +204,7 @@ always @(posedge clk_i) #2ps begin
 end
 
 // only run assertions if within real precision
-if (Implementation != DIV_BSG) if (DivInternalPrecision <= 52) always @(posedge clk_i) #2ps begin
+if (Implementation != ternip_pkg::DIV_BSG) if (DivInternalPrecision <= 52) always @(posedge clk_i) #2ps begin
     while (!rst_ni || !(out_ready_i && out_valid_o)) begin
         @(posedge clk_i); #2ps;
     end

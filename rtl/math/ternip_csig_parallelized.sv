@@ -24,7 +24,16 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-module ternip_csig_parallelized import ternip_pkg::*; (
+module ternip_csig_parallelized #(
+    parameter int FixedPointPrecision = ternip_pkg::FixedPointPrecision,
+    parameter int FixedPointExponent  = ternip_pkg::FixedPointExponent,
+    parameter int VectorParallelism   = ternip_pkg::VectorParallelism,
+    parameter int LutParallelism      = ternip_pkg::LutParallelism,
+    parameter bit UseHardSigmoid      = ternip_pkg::UseHardSigmoid,
+
+    localparam type fixed_point_t  = logic signed [ternip_pkg::FixedPointPrecision-1:0],
+    localparam type vector_chunk_t = fixed_point_t [VectorParallelism-1:0]
+) (
     input  logic          clk_i,
     input  logic          rst_ni,
 
@@ -62,7 +71,7 @@ bsg_parallel_in_serial_out #(
     .width_p(Parallelism*FixedPointPrecision),
     .els_p(VectorParallelism/Parallelism),
     .hi_to_lo_p(0)
-) piso_load_store_r (
+) piso_loadstore_r (
     .clk_i,
     .reset_i(!rst_ni),
 
@@ -76,7 +85,11 @@ bsg_parallel_in_serial_out #(
 );
 
 for (genvar i_GEN = 0; i_GEN < Parallelism; i_GEN++) begin
-    ternip_csig ternip_csig (
+    ternip_csig #(
+        .FixedPointPrecision(FixedPointPrecision),
+        .FixedPointExponent(FixedPointExponent),
+        .UseHardSigmoid(UseHardSigmoid)
+    ) ternip_csig (
         .a_i(r_out_data[i_GEN]),
         .y_o(w_in_data[i_GEN])
     );
@@ -90,7 +103,7 @@ bsg_serial_in_parallel_out_full #(
     .width_p(Parallelism*FixedPointPrecision),
     .els_p(VectorParallelism/Parallelism),
     .hi_to_lo_p(0)
-) sipo_load_store_w (
+) sipo_loadstore_w (
     .clk_i,
     .reset_i(!rst_ni),
 

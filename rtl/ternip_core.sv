@@ -24,7 +24,42 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-module ternip_core import ternip_pkg::*; (
+module ternip_core #(
+    parameter int D                           = ternip_pkg::D,
+    parameter int TmatmulParallelism          = ternip_pkg::TmatmulParallelism,
+    parameter int FixedPointPrecision         = ternip_pkg::FixedPointPrecision,
+    parameter int FixedPointExponent          = ternip_pkg::FixedPointExponent,
+    parameter int VectorParallelism           = ternip_pkg::VectorParallelism,
+    parameter int LutParallelism              = ternip_pkg::LutParallelism,
+    parameter int NumVectorRegisters          = ternip_pkg::NumVectorRegisters,
+    parameter int NumChunksPerVector          = ternip_pkg::NumChunksPerVector,
+    parameter int ImmediateWidth              = ternip_pkg::ImmediateWidth,
+    parameter int DdrAddressWidth             = ternip_pkg::DdrAddressWidth,
+    parameter int BatchSize                   = ternip_pkg::BatchSize,
+    parameter bit UseHardSigmoid              = ternip_pkg::UseHardSigmoid,
+    parameter int RmsSqaSumPrecision          = ternip_pkg::RmsSqaSumPrecision,
+    parameter int RmsSqaSumExponent           = ternip_pkg::RmsSqaSumExponent,
+    parameter int RmsValueReciprocalPrecision = ternip_pkg::RmsValueReciprocalPrecision,
+    parameter int RmsValueReciprocalExponent  = ternip_pkg::RmsValueReciprocalExponent,
+    parameter int RmsSqrtInputPrecision       = ternip_pkg::RmsSqrtInputPrecision,
+    parameter int RmsSqrtInputExponent        = ternip_pkg::RmsSqrtInputExponent,
+    parameter int RmsAccumulatorWidth         = ternip_pkg::RmsAccumulatorWidth,
+    parameter int MatrixSizeInBytes           = ternip_pkg::MatrixSizeInBytes,
+
+    parameter ternip_pkg::mul_impl_e MultiplicationImplementation = ternip_pkg::MultiplicationImplementation,
+    parameter ternip_pkg::div_impl_e DivisionImplementation       = ternip_pkg::DivisionImplementation,
+
+    parameter type instruction_t       = ternip_pkg::instruction_t,
+
+    localparam type fixed_point_t         = logic signed [ternip_pkg::FixedPointPrecision-1:0],
+    localparam type vector_chunk_t        = fixed_point_t [VectorParallelism-1:0],
+    localparam type ternary_t             = logic signed [1:0],
+    localparam type tmatmul_stream_data_t = ternary_t [TmatmulParallelism-1:0],
+    localparam type vector_offset_t       = logic [$clog2(NumChunksPerVector)-1:0],
+    localparam type vector_select_t       = logic [$clog2(NumVectorRegisters)-1:0],
+    localparam type immediate_t           = logic [ImmediateWidth-1:0],
+    localparam type ddr_address_t         = logic [DdrAddressWidth-1:0]
+) (
     input  logic                 clk_i,
     input  logic                 rst_ni,
 
@@ -32,21 +67,21 @@ module ternip_core import ternip_pkg::*; (
     input  logic                 instruction_valid_i,
     input  instruction_t         instruction_i,
 
-    input  logic                 vector_load_store_ddr_stream_ready_i,
-    output logic                 vector_load_store_ddr_stream_valid_o,
-    output ddr_address_t         vector_load_store_ddr_stream_address_o,
-    output logic                 vector_load_store_ddr_stream_write_not_read_o,
-    output logic [31:0]          vector_load_store_ddr_stream_length_o,
+    input  logic                 loadstore_ddr_stream_ready_i,
+    output logic                 loadstore_ddr_stream_valid_o,
+    output ddr_address_t         loadstore_ddr_stream_address_o,
+    output logic                 loadstore_ddr_stream_write_not_read_o,
+    output logic [31:0]          loadstore_ddr_stream_length_o,
 
-    output logic                 vector_load_store_ddr_r_ready_o,
-    input  logic                 vector_load_store_ddr_r_valid_i,
-    input  vector_chunk_t        vector_load_store_ddr_r_data_i,
+    output logic                 loadstore_ddr_r_ready_o,
+    input  logic                 loadstore_ddr_r_valid_i,
+    input  vector_chunk_t        loadstore_ddr_r_data_i,
 
-    input  logic                 vector_load_store_ddr_w_ready_i,
-    output logic                 vector_load_store_ddr_w_valid_o,
-    output vector_chunk_t        vector_load_store_ddr_w_data_o,
+    input  logic                 loadstore_ddr_w_ready_i,
+    output logic                 loadstore_ddr_w_valid_o,
+    output vector_chunk_t        loadstore_ddr_w_data_o,
 
-    output logic [63:0]          vector_load_store_ddr_debug_o,
+    output logic [63:0]          loadstore_ddr_debug_o,
 
     input  logic                 tmatmul_ddr_stream_ready_i,
     output logic                 tmatmul_ddr_stream_valid_o,
@@ -61,19 +96,25 @@ module ternip_core import ternip_pkg::*; (
     input  logic                 stall_clear_i
 );
 
-logic          vector_request_ready;
-logic          vector_request_valid;
-logic          vector_request_write_not_read;
-v_addr_t       vector_request_vector_select;
-DI_t           vector_request_vector_addr;
-vector_chunk_t vector_request_w_data;
+logic           vector_request_ready;
+logic           vector_request_valid;
+logic           vector_request_write_not_read;
+vector_select_t vector_request_vector_select;
+vector_offset_t vector_request_vector_addr;
+vector_chunk_t  vector_request_w_data;
 
-logic          vector_read_ready;
-logic          vector_read_valid;
-DI_t           vector_read_addr;
-vector_chunk_t vector_read_data;
+logic           vector_read_ready;
+logic           vector_read_valid;
+vector_offset_t vector_read_addr;
+vector_chunk_t  vector_read_data;
 
-ternip_vector_registers ternip_vector_registers (
+ternip_vector_registers #(
+    .D(D),
+    .FixedPointPrecision(FixedPointPrecision),
+    .VectorParallelism(VectorParallelism),
+    .NumVectorRegisters(NumVectorRegisters),
+    .NumChunksPerVector(NumChunksPerVector)
+) ternip_vector_registers (
     .clk_i,
     .rst_ni,
 
@@ -91,76 +132,95 @@ ternip_vector_registers ternip_vector_registers (
     .read_data_o(vector_read_data)
 );
 
-logic                  vector_load_store_in_ready;
-logic                  vector_load_store_in_valid;
-load_store_operation_t vector_load_store_in_vector_operation;
-ddr_address_t          vector_load_store_in_vector_memory_address;
-v_addr_t               vector_load_store_in_vector_select;
+logic                      loadstore_in_ready;
+logic                      loadstore_in_valid;
+ternip_pkg::loadstore_op_e loadstore_in_vector_operation;
+ddr_address_t              loadstore_in_vector_memory_address;
+vector_select_t            loadstore_in_vector_select;
 
-logic                  vector_load_store_vector_request_valid;
-logic                  vector_load_store_vector_request_write_not_read;
-v_addr_t               vector_load_store_vector_request_vector_select;
-DI_t                   vector_load_store_vector_request_vector_addr;
-vector_chunk_t         vector_load_store_vector_request_w_data;
+logic                      loadstore_vector_request_valid;
+logic                      loadstore_vector_request_write_not_read;
+vector_select_t            loadstore_vector_request_vector_select;
+vector_offset_t            loadstore_vector_request_vector_addr;
+vector_chunk_t             loadstore_vector_request_w_data;
 
-logic                  vector_load_store_vector_read_ready;
+logic                      loadstore_vector_read_ready;
 
-ternip_vector_load_store ternip_vector_load_store (
+ternip_loadstore #(
+    .D(D),
+    .FixedPointPrecision(FixedPointPrecision),
+    .VectorParallelism(VectorParallelism),
+    .NumVectorRegisters(NumVectorRegisters),
+    .NumChunksPerVector(NumChunksPerVector),
+    .DdrAddressWidth(DdrAddressWidth),
+    .BatchSize(BatchSize)
+) ternip_loadstore (
     .clk_i,
     .rst_ni,
 
-    .in_ready_o(vector_load_store_in_ready),
-    .in_valid_i(vector_load_store_in_valid),
-    .in_vector_operation_i(vector_load_store_in_vector_operation),
-    .in_vector_memory_address_i(vector_load_store_in_vector_memory_address),
-    .in_vector_select_i(vector_load_store_in_vector_select),
+    .in_ready_o(loadstore_in_ready),
+    .in_valid_i(loadstore_in_valid),
+    .in_vector_operation_i(loadstore_in_vector_operation),
+    .in_vector_memory_address_i(loadstore_in_vector_memory_address),
+    .in_vector_select_i(loadstore_in_vector_select),
 
     .vector_request_ready_i(vector_request_ready),
-    .vector_request_valid_o(vector_load_store_vector_request_valid),
-    .vector_request_write_not_read_o(vector_load_store_vector_request_write_not_read),
-    .vector_request_vector_select_o(vector_load_store_vector_request_vector_select),
-    .vector_request_vector_addr_o(vector_load_store_vector_request_vector_addr),
-    .vector_request_w_data_o(vector_load_store_vector_request_w_data),
+    .vector_request_valid_o(loadstore_vector_request_valid),
+    .vector_request_write_not_read_o(loadstore_vector_request_write_not_read),
+    .vector_request_vector_select_o(loadstore_vector_request_vector_select),
+    .vector_request_vector_addr_o(loadstore_vector_request_vector_addr),
+    .vector_request_w_data_o(loadstore_vector_request_w_data),
 
-    .vector_read_ready_o(vector_load_store_vector_read_ready),
+    .vector_read_ready_o(loadstore_vector_read_ready),
     .vector_read_valid_i(vector_read_valid),
     .vector_read_addr_i(vector_read_addr),
     .vector_read_data_i(vector_read_data),
 
-    .ddr_stream_ready_i(vector_load_store_ddr_stream_ready_i),
-    .ddr_stream_valid_o(vector_load_store_ddr_stream_valid_o),
-    .ddr_stream_address_o(vector_load_store_ddr_stream_address_o),
-    .ddr_stream_write_not_read_o(vector_load_store_ddr_stream_write_not_read_o),
-    .ddr_stream_length_o(vector_load_store_ddr_stream_length_o),
+    .ddr_stream_ready_i(loadstore_ddr_stream_ready_i),
+    .ddr_stream_valid_o(loadstore_ddr_stream_valid_o),
+    .ddr_stream_address_o(loadstore_ddr_stream_address_o),
+    .ddr_stream_write_not_read_o(loadstore_ddr_stream_write_not_read_o),
+    .ddr_stream_length_o(loadstore_ddr_stream_length_o),
 
-    .ddr_r_ready_o(vector_load_store_ddr_r_ready_o),
-    .ddr_r_valid_i(vector_load_store_ddr_r_valid_i),
-    .ddr_r_data_i(vector_load_store_ddr_r_data_i),
+    .ddr_r_ready_o(loadstore_ddr_r_ready_o),
+    .ddr_r_valid_i(loadstore_ddr_r_valid_i),
+    .ddr_r_data_i(loadstore_ddr_r_data_i),
 
-    .ddr_w_ready_i(vector_load_store_ddr_w_ready_i),
-    .ddr_w_valid_o(vector_load_store_ddr_w_valid_o),
-    .ddr_w_data_o(vector_load_store_ddr_w_data_o),
+    .ddr_w_ready_i(loadstore_ddr_w_ready_i),
+    .ddr_w_valid_o(loadstore_ddr_w_valid_o),
+    .ddr_w_data_o(loadstore_ddr_w_data_o),
 
-    .debug_o(vector_load_store_ddr_debug_o)
+    .debug_o(loadstore_ddr_debug_o)
 );
 
-logic          rowwise_operation_in_ready;
-logic          rowwise_operation_in_valid;
-operation_t    rowwise_operation_in_operation;
+logic                    rowwise_operation_in_ready;
+logic                    rowwise_operation_in_valid;
+ternip_pkg::rowwise_op_e rowwise_operation_in_operation;
 
-v_addr_t       rowwise_operation_in_vector1_r_select;
-v_addr_t       rowwise_operation_in_vector2_r_select;
-v_addr_t       rowwise_operation_in_vector3_r_select;
+vector_select_t          rowwise_operation_in_vector1_r_select;
+vector_select_t          rowwise_operation_in_vector2_r_select;
+vector_select_t          rowwise_operation_in_vector3_r_select;
 
-logic          rowwise_operation_vector_request_valid;
-logic          rowwise_operation_vector_request_write_not_read;
-v_addr_t       rowwise_operation_vector_request_vector_select;
-DI_t           rowwise_operation_vector_request_vector_addr;
-vector_chunk_t rowwise_operation_vector_request_w_data;
+logic                    rowwise_operation_vector_request_valid;
+logic                    rowwise_operation_vector_request_write_not_read;
+vector_select_t          rowwise_operation_vector_request_vector_select;
+vector_offset_t          rowwise_operation_vector_request_vector_addr;
+vector_chunk_t           rowwise_operation_vector_request_w_data;
 
-logic         rowwise_operation_vector_read_ready;
+logic                    rowwise_operation_vector_read_ready;
 
-ternip_rowwise_operation ternip_rowwise_operation (
+ternip_rowwise_operation #(
+    .D(D),
+    .FixedPointPrecision(FixedPointPrecision),
+    .FixedPointExponent(FixedPointExponent),
+    .VectorParallelism(VectorParallelism),
+    .LutParallelism(LutParallelism),
+    .NumVectorRegisters(NumVectorRegisters),
+    .NumChunksPerVector(NumChunksPerVector),
+    .UseHardSigmoid(UseHardSigmoid),
+    .MultiplicationImplementation(MultiplicationImplementation),
+    .DivisionImplementation(DivisionImplementation)
+) ternip_rowwise_operation (
     .clk_i,
     .rst_ni,
 
@@ -184,22 +244,36 @@ ternip_rowwise_operation ternip_rowwise_operation (
     .vector_read_data_i(vector_read_data)
 );
 
-logic         rms_in_ready;
-logic         rms_in_valid;
-rms_op_t      rms_in_op;
-v_addr_t      rms_in_vector1_select;
-v_addr_t      rms_in_vector2_select;
-immediate_t   rms_in_length;
+logic                rms_in_ready;
+logic                rms_in_valid;
+ternip_pkg::rms_op_e rms_in_op;
+vector_select_t      rms_in_vector1_select;
+vector_select_t      rms_in_vector2_select;
+immediate_t          rms_in_length;
 
-logic          rms_vector_request_valid;
-logic          rms_vector_request_write_not_read;
-v_addr_t       rms_vector_request_vector_select;
-DI_t           rms_vector_request_vector_addr;
-vector_chunk_t rms_vector_request_w_data;
+logic                rms_vector_request_valid;
+logic                rms_vector_request_write_not_read;
+vector_select_t      rms_vector_request_vector_select;
+vector_offset_t      rms_vector_request_vector_addr;
+vector_chunk_t       rms_vector_request_w_data;
 
-logic         rms_vector_read_ready;
+logic                rms_vector_read_ready;
 
-ternip_rms ternip_rms (
+ternip_rms #(
+    .FixedPointPrecision(FixedPointPrecision),
+    .FixedPointExponent(FixedPointExponent),
+    .VectorParallelism(VectorParallelism),
+    .NumVectorRegisters(NumVectorRegisters),
+    .NumChunksPerVector(NumChunksPerVector),
+    .ImmediateWidth(ImmediateWidth),
+    .RmsSqaSumPrecision(RmsSqaSumPrecision),
+    .RmsSqaSumExponent(RmsSqaSumExponent),
+    .RmsValueReciprocalPrecision(RmsValueReciprocalPrecision),
+    .RmsValueReciprocalExponent(RmsValueReciprocalExponent),
+    .RmsSqrtInputPrecision(RmsSqrtInputPrecision),
+    .RmsSqrtInputExponent(RmsSqrtInputExponent),
+    .RmsAccumulatorWidth(RmsAccumulatorWidth)
+) ternip_rms (
     .clk_i,
     .rst_ni,
 
@@ -228,23 +302,31 @@ ternip_rms ternip_rms (
     .rms_value_reciprocal_valid_o()
 );
 
-logic          tmatmul_in_ready;
-logic          tmatmul_in_valid;
-v_addr_t       tmatmul_in_vector_select;
-ddr_address_t  tmatmul_in_go_matrix_address;
+logic                    tmatmul_in_ready;
+logic                    tmatmul_in_valid;
+vector_select_t          tmatmul_in_vector_select;
+ddr_address_t            tmatmul_in_go_matrix_address;
 
-tmatmul_op_t   tmatmul_in_operation;
+ternip_pkg::tmatmul_op_e tmatmul_in_operation;
 
+logic                    tmatmul_vector_request_valid;
+logic                    tmatmul_vector_request_write_not_read;
+vector_select_t          tmatmul_vector_request_vector_select;
+vector_offset_t          tmatmul_vector_request_vector_addr;
+vector_chunk_t           tmatmul_vector_request_w_data;
 
-logic          tmatmul_vector_request_valid;
-logic          tmatmul_vector_request_write_not_read;
-v_addr_t       tmatmul_vector_request_vector_select;
-DI_t           tmatmul_vector_request_vector_addr;
-vector_chunk_t tmatmul_vector_request_w_data;
+logic                    tmatmul_vector_read_ready;
 
-logic          tmatmul_vector_read_ready;
-
-ternip_tmatmul ternip_tmatmul (
+ternip_tmatmul #(
+    .D(D),
+    .TmatmulParallelism(TmatmulParallelism),
+    .FixedPointPrecision(FixedPointPrecision),
+    .VectorParallelism(VectorParallelism),
+    .NumVectorRegisters(NumVectorRegisters),
+    .NumChunksPerVector(NumChunksPerVector),
+    .DdrAddressWidth(DdrAddressWidth),
+    .MatrixSizeInBytes(MatrixSizeInBytes)
+) ternip_tmatmul (
     .clk_i,
     .rst_ni,
 
@@ -293,7 +375,7 @@ end
 
 assign stall_active_o = stall_active_q;
 
-assign instruction_ready_o = (vector_load_store_in_ready
+assign instruction_ready_o = (loadstore_in_ready
                               & rms_in_ready
                               & rowwise_operation_in_ready
                               & tmatmul_in_ready
@@ -307,12 +389,12 @@ always_comb begin
     vector_request_w_data = 'x;
 
     unique case (1)
-        vector_load_store_vector_request_valid: begin
+        loadstore_vector_request_valid: begin
             vector_request_valid = 1;
-            vector_request_write_not_read = vector_load_store_vector_request_write_not_read;
-            vector_request_vector_select = vector_load_store_vector_request_vector_select;
-            vector_request_vector_addr = vector_load_store_vector_request_vector_addr;
-            vector_request_w_data = vector_load_store_vector_request_w_data;
+            vector_request_write_not_read = loadstore_vector_request_write_not_read;
+            vector_request_vector_select = loadstore_vector_request_vector_select;
+            vector_request_vector_addr = loadstore_vector_request_vector_addr;
+            vector_request_w_data = loadstore_vector_request_w_data;
         end
         rms_vector_request_valid: begin
             vector_request_valid = 1;
@@ -339,7 +421,7 @@ always_comb begin
     endcase
 end
 
-assign vector_read_ready = (vector_load_store_vector_read_ready
+assign vector_read_ready = (loadstore_vector_read_ready
                             | rms_vector_read_ready
                             | rowwise_operation_vector_read_ready
                             | tmatmul_vector_read_ready);
@@ -347,13 +429,13 @@ assign vector_read_ready = (vector_load_store_vector_read_ready
 `ifndef SYNTHESIS
 always @(posedge clk_i) if (rst_ni) begin
     assert final (1 >= $countones({
-        vector_load_store_vector_request_valid,
+        loadstore_vector_request_valid,
         rms_vector_request_valid,
         rowwise_operation_vector_request_valid,
         tmatmul_in_valid
     })) else $fatal(0, "Conflict in vector_request_valid");
     assert final (1 >= $countones({
-        vector_load_store_vector_read_ready,
+        loadstore_vector_read_ready,
         rms_vector_read_ready,
         rowwise_operation_vector_read_ready,
         tmatmul_vector_read_ready
@@ -362,58 +444,58 @@ end
 `endif
 
 always_comb begin
-    vector_load_store_in_valid = '0;
-    vector_load_store_in_vector_operation = NO_LS_OP;
-    vector_load_store_in_vector_memory_address = 'x;
-    vector_load_store_in_vector_select = 'x;
+    loadstore_in_valid = '0;
+    loadstore_in_vector_operation = ternip_pkg::NO_LS_OP;
+    loadstore_in_vector_memory_address = 'x;
+    loadstore_in_vector_select = 'x;
 
     rowwise_operation_in_valid = 0;
-    rowwise_operation_in_operation = NOP;
+    rowwise_operation_in_operation = ternip_pkg::NOP;
     rowwise_operation_in_vector1_r_select = 'x;
     rowwise_operation_in_vector2_r_select = 'x;
     rowwise_operation_in_vector3_r_select = 'x;
 
     rms_in_valid = 0;
-    rms_in_op = NO_RMS_OP;
+    rms_in_op = ternip_pkg::NO_RMS_OP;
     rms_in_vector1_select = 'x;
     rms_in_vector2_select = 'x;
     rms_in_length = 'x;
 
     tmatmul_in_valid = '0;
-    tmatmul_in_operation = NO_TMATMUL_OP;
+    tmatmul_in_operation = ternip_pkg::NO_TMATMUL_OP;
     tmatmul_in_go_matrix_address = 'x;
     tmatmul_in_vector_select = 'x;
 
     received_stall_command = 0;
 
     if (instruction_valid_i && instruction_ready_o) unique case (instruction_i.fu)
-        LOAD_STORE: begin
-            vector_load_store_in_valid = 1;
-            vector_load_store_in_vector_operation = instruction_i.load_store_operation;
-            vector_load_store_in_vector_memory_address = instruction_i.ddr_address;
-            vector_load_store_in_vector_select = instruction_i.v_a;
+        ternip_pkg::LOADSTORE: begin
+            loadstore_in_valid = 1;
+            loadstore_in_vector_operation = instruction_i.loadstore_op;
+            loadstore_in_vector_memory_address = instruction_i.ddr_address;
+            loadstore_in_vector_select = instruction_i.v_a;
         end
-        ROWWISE_OPERATION: begin
+        ternip_pkg::ROWWISE_OPERATION: begin
             rowwise_operation_in_valid = 1;
-            rowwise_operation_in_operation = instruction_i.operation;
+            rowwise_operation_in_operation = instruction_i.rowwise_op;
             rowwise_operation_in_vector1_r_select = instruction_i.v_a;
             rowwise_operation_in_vector2_r_select = instruction_i.v_b;
             rowwise_operation_in_vector3_r_select = instruction_i.v_y;
         end
-        TMATMUL: begin
+        ternip_pkg::TMATMUL: begin
             tmatmul_in_valid = 1;
             tmatmul_in_operation = instruction_i.tmatmul_op;
             tmatmul_in_go_matrix_address = instruction_i.ddr_address;
             tmatmul_in_vector_select = instruction_i.v_a;
         end
-        RMS: begin
+        ternip_pkg::RMS: begin
             rms_in_valid = 1;
             rms_in_op = instruction_i.rms_op;
             rms_in_vector1_select = instruction_i.v_a;
             rms_in_vector2_select = instruction_i.v_y;
             rms_in_length = instruction_i.ddr_address;
         end
-        STALL: begin
+        ternip_pkg::STALL: begin
             received_stall_command = 1;
         end
         default: ;

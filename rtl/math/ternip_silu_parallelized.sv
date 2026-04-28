@@ -24,7 +24,17 @@
 // OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 // POSSIBILITY OF SUCH DAMAGE.
 
-module ternip_silu_parallelized import ternip_pkg::*; (
+module ternip_silu_parallelized #(
+    parameter int  FixedPointPrecision          = ternip_pkg::FixedPointPrecision,
+    parameter int  FixedPointExponent           = ternip_pkg::FixedPointExponent,
+    parameter int  VectorParallelism            = ternip_pkg::VectorParallelism,
+    parameter int  LutParallelism               = ternip_pkg::LutParallelism,
+    parameter bit  UseHardSigmoid               = ternip_pkg::UseHardSigmoid,
+    parameter ternip_pkg::mul_impl_e MultiplicationImplementation = ternip_pkg::MultiplicationImplementation,
+
+    localparam type fixed_point_t = logic signed [ternip_pkg::FixedPointPrecision-1:0],
+    localparam type vector_chunk_t = fixed_point_t [VectorParallelism-1:0]
+) (
     input  logic          clk_i,
     input  logic          rst_ni,
 
@@ -62,7 +72,7 @@ bsg_parallel_in_serial_out #(
     .width_p(Parallelism*FixedPointPrecision),
     .els_p(VectorParallelism/Parallelism),
     .hi_to_lo_p(0)
-) piso_load_store_r (
+) piso_loadstore_r (
     .clk_i,
     .reset_i(!rst_ni),
 
@@ -85,7 +95,12 @@ if (UseHardSigmoid) begin : gen_hard_silu
     wire all_silu_out_valid = &silu_out_valid;
 
     for (genvar i_GEN = 0; i_GEN < Parallelism; i_GEN++) begin
-        ternip_silu ternip_silu (
+        ternip_silu #(
+            .FixedPointPrecision(FixedPointPrecision),
+            .FixedPointExponent(FixedPointExponent),
+            .UseHardSigmoid(UseHardSigmoid),
+            .MultiplicationImplementation(MultiplicationImplementation)
+        ) ternip_silu (
             .clk_i,
             .rst_ni,
 
@@ -106,7 +121,12 @@ end else begin : gen_lut_silu
 
     // ternip_silu is combinational
     for (genvar i_GEN = 0; i_GEN < Parallelism; i_GEN++) begin
-        ternip_silu ternip_silu (
+        ternip_silu #(
+            .FixedPointPrecision(FixedPointPrecision),
+            .FixedPointExponent(FixedPointExponent),
+            .UseHardSigmoid(UseHardSigmoid),
+            .MultiplicationImplementation(MultiplicationImplementation)
+        ) ternip_silu (
             .clk_i,
             .rst_ni,
 
@@ -130,7 +150,7 @@ bsg_serial_in_parallel_out_full #(
     .width_p(Parallelism*FixedPointPrecision),
     .els_p(VectorParallelism/Parallelism),
     .hi_to_lo_p(0)
-) sipo_load_store_w (
+) sipo_loadstore_w (
     .clk_i,
     .reset_i(!rst_ni),
 
