@@ -1,0 +1,45 @@
+<div align="center">
+  <img src="docs/ternip.svg" alt="Ternip Logo" width="200"/>
+  <h1>Ternip</h1>
+  <p>RTL accelerator by for Ridger Chu's <a href="https://github.com/ridgerchu/matmulfreellm">MatmulFree LLM</a></p>
+</div>
+
+---
+
+## Overview
+
+Ternip is a parameterizable, open-source RTL implementation of a hardware accelerator targeting the MatmulFree LLM algoirhtnm. MatmulFree LLMs replace traditional matrix multiplication with ternary weight operations, enabling significant reductions in compute and memory bandwidth — making them well-suited for hardware acceleration.
+
+This project is licensed under the [BSD 3-Clause License](LICENSE) and is free to use, modify, and distribute.
+
+### Notable Files
+
+| File | Description |
+|------|-------------|
+| [rtl/ternip/ternip_core.sv](rtl/ternip/ternip_core.sv) | Top-level compute core |
+| [rtl/fus/ternip_tmatmul.sv](rtl/fus/ternip_tmatmul.sv) | Ternary matrix multiplication unit |
+| [rtl/fus/ternip_rms.sv](rtl/fus/ternip_rms.sv) | RMS normalization unit |
+| [rtl/math/](rtl/math/) | Math modules (sqrt, sigmoid, SiLU, and more) |
+
+*Tests and build flow are not currently provided but will be made available shortly.*
+
+## Dependencies
+
+Ternip depends on the [BaseJump STL](https://github.com/bespoke-silicon-group/basejump_stl) hardware library.
+
+## Citation
+
+If you use this work, please cite the original MatmulFree LLM paper:
+
+```bibtex
+@article{zhu2024scalable,
+  title   = {Scalable MatMul-free Language Modeling},
+  author  = {Zhu, Rui-Jie and Zhang, Yu and Sifferman, Ethan and Sheaves, Tyler and Wang, Yiqiao and Richmond, Dustin and Zhou, Peng and Eshraghian, Jason K},
+  journal = {arXiv preprint arXiv:2406.02528},
+  year    = {2024}
+}
+```
+
+## Contributors
+
+See [docs/CONTRIBUTORS](docs/CONTRIBUTORS).
