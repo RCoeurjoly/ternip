@@ -27,6 +27,23 @@ This project is licensed under the [BSD 3-Clause License](LICENSE) and is free t
 
 Ternip depends on the [BaseJump STL](https://github.com/bespoke-silicon-group/basejump_stl) hardware library.
 
+## FuseSoC
+
+Ternip is available on the [FuseSoC Package Directory](https://fusesoc.net). To add it as a library using the GitHub repo directly:
+
+```bash
+fusesoc library add ternip https://github.com/sifferman/ternip --sync-type=git
+```
+
+Then declare it as a dependency in your `.core` file:
+
+```yaml
+filesets:
+  rtl:
+    depend:
+      - sifferman::ternip
+```
+
 ## Citation
 
 If you use this work, please cite the original MatmulFree LLM paper:
