@@ -1,0 +1,50 @@
+{
+  "experiment": "ypcb-wrapper-yosys-slang-synth-v1",
+  "date": "2026-05-05",
+  "status": "PASS",
+  "goal": "Synthesize a YPCB-facing wrapper around ternip_core using yosys-slang and open-source tooling.",
+  "command": "nix build .#ypcb-wrapper-yosys-synth-report -L",
+  "nix_result": "/nix/store/hr1gcdj9w2p7kn79ybg06mkps9asbmwb-ternip-ypcb-wrapper-yosys-synth-report",
+  "configuration": {
+    "ternip_config": "config/reduced_ypcb.svh",
+    "top": "ypcb_ternip_core_wrapper",
+    "yosys": "0.62",
+    "frontend": "yosys-slang",
+    "target": "synth_xilinx -family xc7 -noiopad",
+    "basejump_stl": "a43571d2eaaae2dda7c10490e8350dfdac7da878"
+  },
+  "artifacts": [
+    "summary.json",
+    "synth.log",
+    "stat.json",
+    "ternip-ypcb-wrapper-synth.json"
+  ],
+  "summary": {
+    "yosys_exit_code": 0,
+    "num_wires": 6384,
+    "num_wire_bits": 43504,
+    "num_ports": 27,
+    "num_port_bits": 489,
+    "num_cells": 9945,
+    "num_cells_by_type": {
+      "BUFG": 1,
+      "CARRY4": 826,
+      "FDRE": 2693,
+      "FDSE": 15,
+      "INV": 1552,
+      "LUT1": 22,
+      "LUT2": 843,
+      "LUT3": 1095,
+      "LUT4": 493,
+      "LUT5": 582,
+      "LUT6": 1602,
+      "MUXF7": 106,
+      "MUXF8": 15,
+      "RAM128X1S": 32,
+      "RAM32M": 68
+    }
+  },
+  "decision": {
+    "next_gate": "Add openXC7 placement/routing constraints or a pin-reduced board shim once the board I/O contract is chosen."
+  }
+}
