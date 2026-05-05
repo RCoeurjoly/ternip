@@ -8,6 +8,8 @@
 
 ## Overview
 
+Private video: UCSC CSE210 Winter 2026 Ethan Sifferman (1.58-bit LLM on FPGA)
+
 Ternip is a parameterizable, open-source RTL implementation of a hardware accelerator targeting the MatmulFree LLM algoirhtnm. MatmulFree LLMs replace traditional matrix multiplication with ternary weight operations, enabling significant reductions in compute and memory bandwidth — making them well-suited for hardware acceleration.
 
 This project is licensed under the [BSD 3-Clause License](LICENSE) and is free to use, modify, and distribute.
