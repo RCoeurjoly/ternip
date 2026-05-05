@@ -122,8 +122,11 @@ function automatic integer fixed_point_one(integer exponent);
     return (1 <<< -exponent);
 endfunction
 
-
+`ifdef TERNIP_REDUCED_YPCB_CONFIG
+`include "config/reduced_ypcb.svh"
+`else
 `include `CONFIG_FILENAME
+`endif
 
 
 // Data Types

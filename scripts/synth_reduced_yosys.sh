@@ -22,7 +22,7 @@ read_slang --threads 1 --no-proc --top ternip_core \\
   -I${basejump_stl}/bsg_misc \\
   -I${basejump_stl}/bsg_dataflow \\
   -I${basejump_stl}/bsg_mem \\
-  -DCONFIG_FILENAME=\"${config_file}\" \\
+  -DTERNIP_REDUCED_YPCB_CONFIG \\
   ${basejump_stl}/bsg_misc/bsg_adder_cin.sv \\
   ${basejump_stl}/bsg_misc/bsg_arb_round_robin.sv \\
   ${basejump_stl}/bsg_misc/bsg_circular_ptr.sv \\
