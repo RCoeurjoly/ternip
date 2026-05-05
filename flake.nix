@@ -47,19 +47,54 @@
               EOF
             '';
 
+          reduced-yosys-synth-report =
+            pkgs.runCommand "ternip-reduced-yosys-synth-report" {
+              nativeBuildInputs = [ pkgs.yosys ];
+            } ''
+              set -euo pipefail
+              mkdir -p "$out"
+              cd ${self}
+              set +e
+              BASEJUMP_STL=${basejump-stl} \
+                ${pkgs.bash}/bin/bash scripts/synth_reduced_yosys.sh \
+                  "$out/ternip-reduced-synth.json" \
+                  "$out/stat.json" \
+                  > "$out/synth.log" 2>&1
+              rc=$?
+              set -e
+              status=PASS
+              if [ "$rc" -ne 0 ]; then
+                status=FAIL
+              fi
+              cat > "$out/summary.json" <<EOF
+              {
+                "artifact_name": "ternip-reduced-yosys-synth-report",
+                "status": "$status",
+                "yosys_exit_code": $rc,
+                "config": "config/reduced_ypcb.svh",
+                "basejump_stl": "a43571d2eaaae2dda7c10490e8350dfdac7da878",
+                "synth_json": "ternip-reduced-synth.json",
+                "stat_json": "stat.json",
+                "next_gate": "If PASS, inspect utilization and add a YPCB wrapper gate; if FAIL, fix the first synthesis blocker."
+              }
+              EOF
+            '';
+
           default = self.packages.${system}.reduced-verilator-lint-report;
         });
 
       checks = forAllSystems (system: {
         reduced-verilator-lint =
           self.packages.${system}.reduced-verilator-lint-report;
+        reduced-yosys-synth =
+          self.packages.${system}.reduced-yosys-synth-report;
       });
 
       devShells = forAllSystems (system:
         let pkgs = import nixpkgs { inherit system; };
         in {
           default = pkgs.mkShell {
-            packages = [ pkgs.verilator ];
+            packages = [ pkgs.verilator pkgs.yosys ];
             BASEJUMP_STL = basejump-stl;
           };
         });
