@@ -15,7 +15,7 @@ cd "${repo_root}"
 
 cat > run-reduced-yosys.ys <<EOF
 plugin -i ${yosys_slang_so}
-read_slang --threads 1 --no-proc --top ternip_core \\
+read_slang --threads 1 --no-proc --ignore-assertions --top ternip_core \\
   -I. \\
   -Irtl \\
   -Iconfig \\
