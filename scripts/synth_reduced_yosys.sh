@@ -22,7 +22,7 @@ read_slang --threads 1 --no-proc --top ternip_core \\
   -I${basejump_stl}/bsg_misc \\
   -I${basejump_stl}/bsg_dataflow \\
   -I${basejump_stl}/bsg_mem \\
-  -DCONFIG_FILENAME='"${config_file}"' \\
+  -DCONFIG_FILENAME=\"${config_file}\" \\
   ${basejump_stl}/bsg_misc/bsg_adder_cin.sv \\
   ${basejump_stl}/bsg_misc/bsg_arb_round_robin.sv \\
   ${basejump_stl}/bsg_misc/bsg_circular_ptr.sv \\
@@ -39,6 +39,7 @@ read_slang --threads 1 --no-proc --top ternip_core \\
   ${basejump_stl}/bsg_dataflow/bsg_fifo_1r1w_small_hardened.sv \\
   ${basejump_stl}/bsg_dataflow/bsg_fifo_1r1w_small_unhardened.sv \\
   ${basejump_stl}/bsg_dataflow/bsg_fifo_1r1w_small.sv \\
+  ${basejump_stl}/bsg_dataflow/bsg_fifo_tracker.sv \\
   ${basejump_stl}/bsg_dataflow/bsg_parallel_in_serial_out.sv \\
   ${basejump_stl}/bsg_dataflow/bsg_round_robin_1_to_n.sv \\
   ${basejump_stl}/bsg_dataflow/bsg_round_robin_n_to_1.sv \\
