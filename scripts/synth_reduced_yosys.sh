@@ -17,6 +17,12 @@ awk '
   { print }
 ' "${basejump_stl}/bsg_misc/bsg_arb_round_robin.sv" \
   > generated-bsg/bsg_arb_round_robin_synth_subset.sv
+awk '
+  /^   initial[[:space:]]*$/ { skip = 1; next }
+  skip && /^      end[[:space:]]*$/ { skip = 0; next }
+  !skip { print }
+' "${basejump_stl}/bsg_misc/bsg_circular_ptr.sv" \
+  > generated-bsg/bsg_circular_ptr_synth_subset.sv
 
 cat > run-reduced-yosys.ys <<EOF
 read_verilog -sv \\
@@ -29,7 +35,7 @@ read_verilog -sv \\
   -DCONFIG_FILENAME='"${config_file}"' \\
   ${basejump_stl}/bsg_misc/bsg_adder_cin.sv \\
   generated-bsg/bsg_arb_round_robin_synth_subset.sv \\
-  ${basejump_stl}/bsg_misc/bsg_circular_ptr.sv \\
+  generated-bsg/bsg_circular_ptr_synth_subset.sv \\
   ${basejump_stl}/bsg_misc/bsg_crossbar_o_by_i.sv \\
   ${basejump_stl}/bsg_misc/bsg_encode_one_hot.sv \\
   ${basejump_stl}/bsg_misc/bsg_idiv_iterative_controller.sv \\
