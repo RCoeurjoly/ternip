@@ -26,7 +26,10 @@ read_slang --threads 1 --no-proc --top ternip_core \\
   ${basejump_stl}/bsg_misc/bsg_adder_cin.sv \\
   ${basejump_stl}/bsg_misc/bsg_arb_round_robin.sv \\
   ${basejump_stl}/bsg_misc/bsg_circular_ptr.sv \\
+  ${basejump_stl}/bsg_misc/bsg_counter_clear_up.sv \\
   ${basejump_stl}/bsg_misc/bsg_crossbar_o_by_i.sv \\
+  ${basejump_stl}/bsg_misc/bsg_dff_en.sv \\
+  ${basejump_stl}/bsg_misc/bsg_dff_reset.sv \\
   ${basejump_stl}/bsg_misc/bsg_encode_one_hot.sv \\
   ${basejump_stl}/bsg_misc/bsg_idiv_iterative_controller.sv \\
   ${basejump_stl}/bsg_misc/bsg_idiv_iterative.sv \\
@@ -40,6 +43,7 @@ read_slang --threads 1 --no-proc --top ternip_core \\
   ${basejump_stl}/bsg_dataflow/bsg_fifo_1r1w_small_unhardened.sv \\
   ${basejump_stl}/bsg_dataflow/bsg_fifo_1r1w_small.sv \\
   ${basejump_stl}/bsg_dataflow/bsg_fifo_tracker.sv \\
+  ${basejump_stl}/bsg_dataflow/bsg_one_fifo.sv \\
   ${basejump_stl}/bsg_dataflow/bsg_parallel_in_serial_out.sv \\
   ${basejump_stl}/bsg_dataflow/bsg_round_robin_1_to_n.sv \\
   ${basejump_stl}/bsg_dataflow/bsg_round_robin_n_to_1.sv \\

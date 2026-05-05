@@ -66,8 +66,13 @@ module ternip_vector_registers #(
 );
 
 logic [$bits(vector_select_t)+$bits(vector_offset_t)-1:0] request_mem_addr, read_mem_addr;
+logic [FixedPointPrecision * VectorParallelism - 1:0] request_mem_w_data;
+logic [FixedPointPrecision * VectorParallelism - 1:0] read_mem_data;
+
 assign request_mem_addr = {request_vector_select_i, request_vector_addr_i};
 assign {read_vector_select_o, read_addr_o} = read_mem_addr;
+assign request_mem_w_data = request_w_data_i;
+assign read_data_o = read_mem_data;
 
 localparam int D_rounded_up = 2**$clog2(D);
 
@@ -83,12 +88,12 @@ ternip_pipelined_mem #(
     .request_valid_i,
     .request_write_not_read_i,
     .request_addr_i(request_mem_addr),
-    .request_w_data_i,
+    .request_w_data_i(request_mem_w_data),
 
     .read_ready_i,
     .read_valid_o,
     .read_addr_o(read_mem_addr),
-    .read_data_o
+    .read_data_o(read_mem_data)
 );
 
 endmodule
