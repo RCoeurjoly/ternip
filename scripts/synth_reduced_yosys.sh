@@ -5,27 +5,17 @@ script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd -- "${script_dir}/.." && pwd)"
 
 basejump_stl="${BASEJUMP_STL:?set BASEJUMP_STL to a BaseJump STL checkout}"
+yosys="${YOSYS:-yosys}"
+yosys_slang_so="${YOSYS_SLANG_SO:?set YOSYS_SLANG_SO to slang.so}"
 config_file="${TERNIP_CONFIG:-config/reduced_ypcb.svh}"
 out_json="${1:?usage: synth_reduced_yosys.sh <out-json> <out-stat-json>}"
 out_stat_json="${2:?usage: synth_reduced_yosys.sh <out-json> <out-stat-json>}"
 
 cd "${repo_root}"
 
-mkdir -p generated-bsg
-awk '
-  /^module bsg_arb_round_robin_two_level/ { exit }
-  { print }
-' "${basejump_stl}/bsg_misc/bsg_arb_round_robin.sv" \
-  > generated-bsg/bsg_arb_round_robin_synth_subset.sv
-awk '
-  /^   initial[[:space:]]*$/ { skip = 1; next }
-  skip && /^      end[[:space:]]*$/ { skip = 0; next }
-  !skip { print }
-' "${basejump_stl}/bsg_misc/bsg_circular_ptr.sv" \
-  > generated-bsg/bsg_circular_ptr_synth_subset.sv
-
 cat > run-reduced-yosys.ys <<EOF
-read_verilog -sv \\
+plugin -i ${yosys_slang_so}
+read_slang --threads 1 --no-proc --top ternip_core \\
   -I. \\
   -Irtl \\
   -Iconfig \\
@@ -34,12 +24,16 @@ read_verilog -sv \\
   -I${basejump_stl}/bsg_mem \\
   -DCONFIG_FILENAME='"${config_file}"' \\
   ${basejump_stl}/bsg_misc/bsg_adder_cin.sv \\
-  generated-bsg/bsg_circular_ptr_synth_subset.sv \\
+  ${basejump_stl}/bsg_misc/bsg_arb_round_robin.sv \\
+  ${basejump_stl}/bsg_misc/bsg_circular_ptr.sv \\
+  ${basejump_stl}/bsg_misc/bsg_crossbar_o_by_i.sv \\
+  ${basejump_stl}/bsg_misc/bsg_encode_one_hot.sv \\
   ${basejump_stl}/bsg_misc/bsg_idiv_iterative_controller.sv \\
   ${basejump_stl}/bsg_misc/bsg_idiv_iterative.sv \\
   ${basejump_stl}/bsg_misc/bsg_imul_iterative.sv \\
   ${basejump_stl}/bsg_misc/bsg_mux_one_hot.sv \\
   ${basejump_stl}/bsg_misc/bsg_nor2.sv \\
+  ${basejump_stl}/bsg_misc/bsg_round_robin_arb.sv \\
   ${basejump_stl}/bsg_mem/bsg_mem_1r1w_synth.sv \\
   ${basejump_stl}/bsg_mem/bsg_mem_1r1w.sv \\
   ${basejump_stl}/bsg_dataflow/bsg_fifo_1r1w_small_hardened.sv \\
@@ -47,6 +41,7 @@ read_verilog -sv \\
   ${basejump_stl}/bsg_dataflow/bsg_fifo_1r1w_small.sv \\
   ${basejump_stl}/bsg_dataflow/bsg_parallel_in_serial_out.sv \\
   ${basejump_stl}/bsg_dataflow/bsg_round_robin_1_to_n.sv \\
+  ${basejump_stl}/bsg_dataflow/bsg_round_robin_n_to_1.sv \\
   ${basejump_stl}/bsg_dataflow/bsg_serial_in_parallel_out_full.sv \\
   ${basejump_stl}/bsg_dataflow/bsg_two_fifo.sv \\
   rtl/ternip_pkg.sv \\
@@ -63,6 +58,7 @@ read_verilog -sv \\
   rtl/math/ternip_sqrt.sv \\
   rtl/math/ternip_starmul.sv \\
   rtl/math/ternip_fixed_point_convert.sv \\
+  rtl/math/ternip_round_robin_operation.sv \\
   rtl/math/ternip_csig.sv \\
   rtl/math/ternip_csig_parallelized.sv \\
   rtl/math/ternip_sig.sv \\
@@ -86,4 +82,4 @@ stat -json > ${out_stat_json}
 write_json ${out_json}
 EOF
 
-yosys -s run-reduced-yosys.ys
+"${yosys}" -s run-reduced-yosys.ys
