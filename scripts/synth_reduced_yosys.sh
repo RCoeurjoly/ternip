@@ -34,16 +34,12 @@ read_verilog -sv \\
   -I${basejump_stl}/bsg_mem \\
   -DCONFIG_FILENAME='"${config_file}"' \\
   ${basejump_stl}/bsg_misc/bsg_adder_cin.sv \\
-  generated-bsg/bsg_arb_round_robin_synth_subset.sv \\
   generated-bsg/bsg_circular_ptr_synth_subset.sv \\
-  ${basejump_stl}/bsg_misc/bsg_crossbar_o_by_i.sv \\
-  ${basejump_stl}/bsg_misc/bsg_encode_one_hot.sv \\
   ${basejump_stl}/bsg_misc/bsg_idiv_iterative_controller.sv \\
   ${basejump_stl}/bsg_misc/bsg_idiv_iterative.sv \\
   ${basejump_stl}/bsg_misc/bsg_imul_iterative.sv \\
   ${basejump_stl}/bsg_misc/bsg_mux_one_hot.sv \\
   ${basejump_stl}/bsg_misc/bsg_nor2.sv \\
-  ${basejump_stl}/bsg_misc/bsg_round_robin_arb.sv \\
   ${basejump_stl}/bsg_mem/bsg_mem_1r1w_synth.sv \\
   ${basejump_stl}/bsg_mem/bsg_mem_1r1w.sv \\
   ${basejump_stl}/bsg_dataflow/bsg_fifo_1r1w_small_hardened.sv \\
@@ -51,7 +47,6 @@ read_verilog -sv \\
   ${basejump_stl}/bsg_dataflow/bsg_fifo_1r1w_small.sv \\
   ${basejump_stl}/bsg_dataflow/bsg_parallel_in_serial_out.sv \\
   ${basejump_stl}/bsg_dataflow/bsg_round_robin_1_to_n.sv \\
-  ${basejump_stl}/bsg_dataflow/bsg_round_robin_n_to_1.sv \\
   ${basejump_stl}/bsg_dataflow/bsg_serial_in_parallel_out_full.sv \\
   ${basejump_stl}/bsg_dataflow/bsg_two_fifo.sv \\
   rtl/ternip_pkg.sv \\
@@ -68,7 +63,6 @@ read_verilog -sv \\
   rtl/math/ternip_sqrt.sv \\
   rtl/math/ternip_starmul.sv \\
   rtl/math/ternip_fixed_point_convert.sv \\
-  rtl/math/ternip_round_robin_operation.sv \\
   rtl/math/ternip_csig.sv \\
   rtl/math/ternip_csig_parallelized.sv \\
   rtl/math/ternip_sig.sv \\
