@@ -53,7 +53,9 @@
             } ''
               set -euo pipefail
               mkdir -p "$out"
-              cd ${self}
+              cp -r ${self} ternip-src
+              chmod -R u+w ternip-src
+              cd ternip-src
               set +e
               BASEJUMP_STL=${basejump-stl} \
                 ${pkgs.bash}/bin/bash scripts/synth_reduced_yosys.sh \
