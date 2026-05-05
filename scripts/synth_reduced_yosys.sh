@@ -11,6 +11,13 @@ out_stat_json="${2:?usage: synth_reduced_yosys.sh <out-json> <out-stat-json>}"
 
 cd "${repo_root}"
 
+mkdir -p generated-bsg
+awk '
+  /^module bsg_arb_round_robin_two_level/ { exit }
+  { print }
+' "${basejump_stl}/bsg_misc/bsg_arb_round_robin.sv" \
+  > generated-bsg/bsg_arb_round_robin_synth_subset.sv
+
 cat > run-reduced-yosys.ys <<EOF
 read_verilog -sv \\
   -I. \\
@@ -21,7 +28,7 @@ read_verilog -sv \\
   -I${basejump_stl}/bsg_mem \\
   -DCONFIG_FILENAME='"${config_file}"' \\
   ${basejump_stl}/bsg_misc/bsg_adder_cin.sv \\
-  ${basejump_stl}/bsg_misc/bsg_arb_round_robin.sv \\
+  generated-bsg/bsg_arb_round_robin_synth_subset.sv \\
   ${basejump_stl}/bsg_misc/bsg_circular_ptr.sv \\
   ${basejump_stl}/bsg_misc/bsg_crossbar_o_by_i.sv \\
   ${basejump_stl}/bsg_misc/bsg_encode_one_hot.sv \\
