@@ -83,7 +83,7 @@ hierarchy -top ternip_core -check
 proc
 flatten
 synth_xilinx -family xc7 -top ternip_core -noiopad
-stat -json > ${out_stat_json}
+tee -o ${out_stat_json} stat -json
 write_json ${out_json}
 EOF
 
