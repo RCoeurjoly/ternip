@@ -1,0 +1,48 @@
+{
+  "experiment": "reduced-yosys-slang-synth-v1",
+  "date": "2026-05-05",
+  "status": "PASS",
+  "goal": "Synthesize a reduced Ternip core using yosys-slang and open-source tooling.",
+  "command": "nix build .#reduced-yosys-synth-report -L",
+  "nix_result": "/nix/store/z13lkr7lw68xsvv9a64kvxh15h8i456v-ternip-reduced-yosys-synth-report",
+  "configuration": {
+    "ternip_config": "config/reduced_ypcb.svh",
+    "top": "ternip_core",
+    "yosys": "0.62",
+    "frontend": "yosys-slang",
+    "target": "synth_xilinx -family xc7 -noiopad",
+    "basejump_stl": "a43571d2eaaae2dda7c10490e8350dfdac7da878"
+  },
+  "artifacts": [
+    "summary.json",
+    "synth.log",
+    "stat.json",
+    "ternip-reduced-synth.json"
+  ],
+  "summary": {
+    "yosys_exit_code": 0,
+    "num_wires": 6343,
+    "num_wire_bits": 42844,
+    "num_cells": 9946,
+    "num_cells_by_type": {
+      "BUFG": 1,
+      "CARRY4": 826,
+      "FDRE": 2693,
+      "FDSE": 15,
+      "INV": 1549,
+      "LUT1": 24,
+      "LUT2": 849,
+      "LUT3": 1114,
+      "LUT4": 443,
+      "LUT5": 556,
+      "LUT6": 1654,
+      "MUXF7": 108,
+      "MUXF8": 14,
+      "RAM128X1S": 32,
+      "RAM32M": 68
+    }
+  },
+  "decision": {
+    "next_gate": "Add a YPCB wrapper gate around ternip_core and move from synthesis-only to openXC7 placement/routing constraints."
+  }
+}
