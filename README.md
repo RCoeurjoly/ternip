@@ -18,10 +18,15 @@ This project is licensed under the [BSD 3-Clause License](LICENSE) and is free t
 
 | File | Description |
 |------|-------------|
+| [docs/LLM2FPGA_EXECUTION_PLAN.md](docs/LLM2FPGA_EXECUTION_PLAN.md) | Feasibility plan for end-to-end FPGA inference adoption with gated go/no-go criteria. |
+| [docs/LLM2FPGA_GATE1_CHECKLIST.md](docs/LLM2FPGA_GATE1_CHECKLIST.md) | Gate 1 execution checklist and artifact format. |
+| [docs/LLM2FPGA_GATE2_CHECKLIST.md](docs/LLM2FPGA_GATE2_CHECKLIST.md) | Gate 2 parity checklist for TMATMUL block replay. |
 | [rtl/ternip/ternip_core.sv](rtl/ternip/ternip_core.sv) | Top-level compute core |
 | [rtl/fus/ternip_tmatmul.sv](rtl/fus/ternip_tmatmul.sv) | Ternary matrix multiplication unit |
 | [rtl/fus/ternip_rms.sv](rtl/fus/ternip_rms.sv) | RMS normalization unit |
 | [rtl/math/](rtl/math/) | Math modules (sqrt, sigmoid, SiLU, and more) |
+| [scripts/gate1/run_gate1_smoke.sh](scripts/gate1/run_gate1_smoke.sh) | Gate 1 deterministic checkpoint smoke test runner. |
+| [scripts/gate2/run_gate2_tmatmul_parity.sh](scripts/gate2/run_gate2_tmatmul_parity.sh) | Gate 2 TMATMUL parity runner. |
 
 *Tests and build flow are not currently provided but will be made available shortly.*
 
